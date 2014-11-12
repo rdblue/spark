@@ -200,6 +200,10 @@
       <artifactId>metrics-graphite</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.avro</groupId>
+      <artifactId>avro</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.apache.derby</groupId>
       <artifactId>derby</artifactId>
       <scope>test</scope>
@@ -401,6 +405,24 @@
               <includeArtifactIds>guava</includeArtifactIds>
               <silent>true</silent>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro-maven-plugin</artifactId>
+        <version>${avro.version}</version>
+        <configuration>
+          <stringType>String</stringType>
+          <createSetters>false</createSetters>
+          <fieldVisibility>private</fieldVisibility>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>schema</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>

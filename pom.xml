@@ -881,6 +881,9 @@
               <goals>
                 <goal>compile</goal>
               </goals>
+              <configuration>
+                <arg>–Xmax-classfile-name 143</arg>
+              </configuration>
             </execution>
             <execution>
               <id>scala-test-compile-first</id>

@@ -187,6 +187,10 @@ private[spark] class KryoSerializerInstance(ks: KryoSerializer) extends Serializ
   override def deserializeStream(s: InputStream): DeserializationStream = {
     new KryoDeserializationStream(kryo, s)
   }
+
+  def getKryo: Kryo = {
+    kryo
+  }
 }
 
 /**

@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "User",
+  "namespace": "org.apache.spark.serializer",
+  "doc": "A test user record",
+  "fields": [
+    {
+      "name": "id",
+      "type": "long"
+    },
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "email",
+      "type": "string"
+    }
+  ]
+}
