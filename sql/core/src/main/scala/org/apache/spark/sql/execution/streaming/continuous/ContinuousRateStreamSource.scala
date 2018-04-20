@@ -35,7 +35,7 @@ case class RateStreamPartitionOffset(
    partition: Int, currentValue: Long, currentTimeMs: Long) extends PartitionOffset
 
 class RateStreamContinuousReader(options: DataSourceOptions)
-  extends ContinuousReader {
+  extends ContinuousReader with SupportsDeprecatedScanRow {
   implicit val defaultFormats: DefaultFormats = DefaultFormats
 
   val creationTime = System.currentTimeMillis()
@@ -67,7 +67,7 @@ class RateStreamContinuousReader(options: DataSourceOptions)
 
   override def getStartOffset(): Offset = offset
 
-  override def createDataReaderFactories(): java.util.List[DataReaderFactory[Row]] = {
+  override def createDataReaderFactories(): java.util.List[ReadTask[Row]] = {
     val partitionStartMap = offset match {
       case off: RateStreamOffset => off.partitionToValueAndRunTimeMs
       case off =>
@@ -91,7 +91,7 @@ class RateStreamContinuousReader(options: DataSourceOptions)
         i,
         numPartitions,
         perPartitionRate)
-        .asInstanceOf[DataReaderFactory[Row]]
+        .asInstanceOf[ReadTask[Row]]
     }.asJava
   }
 

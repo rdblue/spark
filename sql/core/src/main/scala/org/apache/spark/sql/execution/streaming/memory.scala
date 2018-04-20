@@ -29,12 +29,13 @@ import scala.util.control.NonFatal
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.{encoderFor, ExpressionEncoder}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, LogicalPlan, Statistics}
 import org.apache.spark.sql.catalyst.streaming.InternalOutputModes._
 import org.apache.spark.sql.execution.streaming.continuous.ContinuousTrigger
-import org.apache.spark.sql.sources.v2.reader.{DataReader, DataReaderFactory, SupportsScanUnsafeRow}
+import org.apache.spark.sql.sources.v2.reader.{DataReader, ReadTask}
 import org.apache.spark.sql.sources.v2.reader.streaming.{MicroBatchReader, Offset => OffsetV2}
 import org.apache.spark.sql.streaming.{OutputMode, Trigger}
 import org.apache.spark.sql.types.StructType
@@ -81,8 +82,7 @@ abstract class MemoryStreamBase[A : Encoder](sqlContext: SQLContext) extends Bas
  * available.
  */
 case class MemoryStream[A : Encoder](id: Int, sqlContext: SQLContext)
-    extends MemoryStreamBase[A](sqlContext)
-      with MicroBatchReader with SupportsScanUnsafeRow with Logging {
+    extends MemoryStreamBase[A](sqlContext) with MicroBatchReader with Logging {
 
   protected val logicalPlan: LogicalPlan =
     StreamingExecutionRelation(this, attributes)(sqlContext.sparkSession)
@@ -141,7 +141,7 @@ case class MemoryStream[A : Encoder](id: Int, sqlContext: SQLContext)
     if (endOffset.offset == -1) null else endOffset
   }
 
-  override def createUnsafeRowReaderFactories(): ju.List[DataReaderFactory[UnsafeRow]] = {
+  override def createReadTasks(): ju.List[ReadTask[InternalRow]] = {
     synchronized {
       // Compute the internal batch numbers to fetch: [startOrdinal, endOrdinal)
       val startOrdinal = startOffset.offset.toInt + 1
@@ -157,9 +157,11 @@ case class MemoryStream[A : Encoder](id: Int, sqlContext: SQLContext)
 
       logDebug(generateDebugString(newBlocks.flatten, startOrdinal, endOrdinal))
 
-      newBlocks.map { block =>
-        new MemoryStreamDataReaderFactory(block).asInstanceOf[DataReaderFactory[UnsafeRow]]
-      }.asJava
+      val tasks: Seq[ReadTask[InternalRow]] = newBlocks.map { block =>
+        new MemoryStreamDataReaderFactory(block)
+      }
+
+      tasks.asJava
     }
   }
 
@@ -204,9 +206,9 @@ case class MemoryStream[A : Encoder](id: Int, sqlContext: SQLContext)
 
 
 class MemoryStreamDataReaderFactory(records: Array[UnsafeRow])
-  extends DataReaderFactory[UnsafeRow] {
-  override def createDataReader(): DataReader[UnsafeRow] = {
-    new DataReader[UnsafeRow] {
+  extends ReadTask[InternalRow] {
+  override def createDataReader(): DataReader[InternalRow] = {
+    new DataReader[InternalRow] {
       private var currentIndex = -1
 
       override def next(): Boolean = {
@@ -215,7 +217,7 @@ class MemoryStreamDataReaderFactory(records: Array[UnsafeRow])
         currentIndex < records.length
       }
 
-      override def get(): UnsafeRow = records(currentIndex)
+      override def get(): InternalRow = records(currentIndex)
 
       override def close(): Unit = {}
     }

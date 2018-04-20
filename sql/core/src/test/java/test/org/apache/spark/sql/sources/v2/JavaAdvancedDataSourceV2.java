@@ -33,7 +33,7 @@ import org.apache.spark.sql.types.StructType;
 public class JavaAdvancedDataSourceV2 implements DataSourceV2, ReadSupport {
 
   public class Reader implements DataSourceReader, SupportsPushDownRequiredColumns,
-      SupportsPushDownFilters {
+      SupportsPushDownFilters, SupportsDeprecatedScanRow {
 
     // Exposed for testing.
     public StructType requiredSchema = new StructType().add("i", "int").add("j", "int");
@@ -79,8 +79,8 @@ public class JavaAdvancedDataSourceV2 implements DataSourceV2, ReadSupport {
     }
 
     @Override
-    public List<DataReaderFactory<Row>> createDataReaderFactories() {
-      List<DataReaderFactory<Row>> res = new ArrayList<>();
+    public List<ReadTask<Row>> createDataReaderFactories() {
+      List<ReadTask<Row>> res = new ArrayList<>();
 
       Integer lowerBound = null;
       for (Filter filter : filters) {
@@ -107,7 +107,7 @@ public class JavaAdvancedDataSourceV2 implements DataSourceV2, ReadSupport {
     }
   }
 
-  static class JavaAdvancedDataReaderFactory implements DataReaderFactory<Row>, DataReader<Row> {
+  static class JavaAdvancedDataReaderFactory implements ReadTask<Row>, DataReader<Row> {
     private int start;
     private int end;
     private StructType requiredSchema;

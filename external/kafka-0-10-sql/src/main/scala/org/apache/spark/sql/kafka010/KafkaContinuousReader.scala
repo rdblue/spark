@@ -26,6 +26,7 @@ import org.apache.kafka.common.TopicPartition
 import org.apache.spark.TaskContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.kafka010.KafkaSourceProvider.{INSTRUCTION_FOR_FAIL_ON_DATA_LOSS_FALSE, INSTRUCTION_FOR_FAIL_ON_DATA_LOSS_TRUE}
 import org.apache.spark.sql.sources.v2.reader._
@@ -53,7 +54,7 @@ class KafkaContinuousReader(
     metadataPath: String,
     initialOffsets: KafkaOffsetRangeLimit,
     failOnDataLoss: Boolean)
-  extends ContinuousReader with SupportsScanUnsafeRow with Logging {
+  extends ContinuousReader with Logging {
 
   private lazy val session = SparkSession.getActiveSession.get
   private lazy val sc = session.sparkContext
@@ -86,7 +87,7 @@ class KafkaContinuousReader(
     KafkaSourceOffset(JsonUtils.partitionOffsets(json))
   }
 
-  override def createUnsafeRowReaderFactories(): ju.List[DataReaderFactory[UnsafeRow]] = {
+  override def createReadTasks(): ju.List[ReadTask[InternalRow]] = {
     import scala.collection.JavaConverters._
 
     val oldStartPartitionOffsets = KafkaSourceOffset.getPartitionOffsets(offset)
@@ -104,12 +105,13 @@ class KafkaContinuousReader(
       oldStartPartitionOffsets.filterKeys(!deletedPartitions.contains(_))
     knownPartitions = startOffsets.keySet
 
-    startOffsets.toSeq.map {
+    val tasks: Seq[ReadTask[InternalRow]] = startOffsets.toSeq.map {
       case (topicPartition, start) =>
         KafkaContinuousDataReaderFactory(
           topicPartition, start, kafkaParams, pollTimeoutMs, failOnDataLoss)
-          .asInstanceOf[DataReaderFactory[UnsafeRow]]
-    }.asJava
+    }
+
+    tasks.asJava
   }
 
   /** Stop this source and free any resources it has allocated. */
@@ -161,7 +163,7 @@ case class KafkaContinuousDataReaderFactory(
     startOffset: Long,
     kafkaParams: ju.Map[String, Object],
     pollTimeoutMs: Long,
-    failOnDataLoss: Boolean) extends ContinuousDataReaderFactory[UnsafeRow] {
+    failOnDataLoss: Boolean) extends ContinuousDataReaderFactory[InternalRow] {
 
   override def createDataReaderWithOffset(offset: PartitionOffset): DataReader[UnsafeRow] = {
     val kafkaOffset = offset.asInstanceOf[KafkaSourcePartitionOffset]

@@ -28,7 +28,7 @@ import org.apache.hadoop.fs.{FileSystem, FSDataInputStream, Path}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.sources.v2.reader.{DataReader, DataReaderFactory, DataSourceReader}
+import org.apache.spark.sql.sources.v2.reader.{DataReader, DataSourceReader, ReadTask, SupportsDeprecatedScanRow}
 import org.apache.spark.sql.sources.v2.writer._
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.util.SerializableConfiguration
@@ -42,10 +42,11 @@ class SimpleWritableDataSource extends DataSourceV2 with ReadSupport with WriteS
 
   private val schema = new StructType().add("i", "long").add("j", "long")
 
-  class Reader(path: String, conf: Configuration) extends DataSourceReader {
+  class Reader(path: String, conf: Configuration) extends DataSourceReader
+      with SupportsDeprecatedScanRow {
     override def readSchema(): StructType = schema
 
-    override def createDataReaderFactories(): JList[DataReaderFactory[Row]] = {
+    override def createDataReaderFactories(): JList[ReadTask[Row]] = {
       val dataPath = new Path(path)
       val fs = dataPath.getFileSystem(conf)
       if (fs.exists(dataPath)) {
@@ -56,7 +57,7 @@ class SimpleWritableDataSource extends DataSourceV2 with ReadSupport with WriteS
           val serializableConf = new SerializableConfiguration(conf)
           new SimpleCSVDataReaderFactory(
             f.getPath.toUri.toString,
-            serializableConf): DataReaderFactory[Row]
+            serializableConf): ReadTask[Row]
         }.toList.asJava
       } else {
         Collections.emptyList()
@@ -157,7 +158,7 @@ class SimpleWritableDataSource extends DataSourceV2 with ReadSupport with WriteS
 }
 
 class SimpleCSVDataReaderFactory(path: String, conf: SerializableConfiguration)
-  extends DataReaderFactory[Row] with DataReader[Row] {
+  extends ReadTask[Row] with DataReader[Row] {
 
   @transient private var lines: Iterator[String] = _
   @transient private var currentLine: String = _

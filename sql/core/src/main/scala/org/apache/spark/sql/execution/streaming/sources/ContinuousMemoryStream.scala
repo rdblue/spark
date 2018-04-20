@@ -34,7 +34,7 @@ import org.apache.spark.sql.{Encoder, Row, SQLContext}
 import org.apache.spark.sql.execution.streaming._
 import org.apache.spark.sql.execution.streaming.sources.ContinuousMemoryStream.GetRecord
 import org.apache.spark.sql.sources.v2.{ContinuousReadSupport, DataSourceOptions}
-import org.apache.spark.sql.sources.v2.reader.DataReaderFactory
+import org.apache.spark.sql.sources.v2.reader.{ReadTask, SupportsDeprecatedScanRow}
 import org.apache.spark.sql.sources.v2.reader.streaming.{ContinuousDataReader, ContinuousReader, Offset, PartitionOffset}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.RpcUtils
@@ -48,7 +48,8 @@ import org.apache.spark.util.RpcUtils
  *    offset within the list, or null if that offset doesn't yet have a record.
  */
 class ContinuousMemoryStream[A : Encoder](id: Int, sqlContext: SQLContext)
-  extends MemoryStreamBase[A](sqlContext) with ContinuousReader with ContinuousReadSupport {
+  extends MemoryStreamBase[A](sqlContext)
+      with SupportsDeprecatedScanRow with ContinuousReader with ContinuousReadSupport {
   private implicit val formats = Serialization.formats(NoTypeHints)
   private val NUM_PARTITIONS = 2
 
@@ -99,7 +100,7 @@ class ContinuousMemoryStream[A : Encoder](id: Int, sqlContext: SQLContext)
     )
   }
 
-  override def createDataReaderFactories(): ju.List[DataReaderFactory[Row]] = {
+  override def createDataReaderFactories(): ju.List[ReadTask[Row]] = {
     synchronized {
       val endpointName = s"ContinuousMemoryStreamRecordEndpoint-${java.util.UUID.randomUUID()}-$id"
       endpointRef =
@@ -108,7 +109,7 @@ class ContinuousMemoryStream[A : Encoder](id: Int, sqlContext: SQLContext)
       startOffset.partitionNums.map {
         case (part, index) =>
           new ContinuousMemoryStreamDataReaderFactory(
-            endpointName, part, index): DataReaderFactory[Row]
+            endpointName, part, index): ReadTask[Row]
       }.toList.asJava
     }
   }
@@ -160,7 +161,7 @@ object ContinuousMemoryStream {
 class ContinuousMemoryStreamDataReaderFactory(
     driverEndpointName: String,
     partition: Int,
-    startOffset: Int) extends DataReaderFactory[Row] {
+    startOffset: Int) extends ReadTask[Row] {
   override def createDataReader: ContinuousMemoryStreamDataReader =
     new ContinuousMemoryStreamDataReader(driverEndpointName, partition, startOffset)
 }

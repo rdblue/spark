@@ -42,14 +42,14 @@ public class JavaBatchDataSourceV2 implements DataSourceV2, ReadSupport {
     }
 
     @Override
-    public List<DataReaderFactory<ColumnarBatch>> createBatchDataReaderFactories() {
+    public List<ReadTask<ColumnarBatch>> createBatchReadTasks() {
       return java.util.Arrays.asList(
                new JavaBatchDataReaderFactory(0, 50), new JavaBatchDataReaderFactory(50, 90));
     }
   }
 
   static class JavaBatchDataReaderFactory
-      implements DataReaderFactory<ColumnarBatch>, DataReader<ColumnarBatch> {
+      implements ReadTask<ColumnarBatch>, DataReader<ColumnarBatch> {
     private int start;
     private int end;
 

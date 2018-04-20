@@ -34,7 +34,7 @@ import org.apache.spark.sql.types.StructType;
 
 public class JavaPartitionAwareDataSource implements DataSourceV2, ReadSupport {
 
-  class Reader implements DataSourceReader, SupportsReportPartitioning {
+  class Reader implements DataSourceReader, SupportsReportPartitioning, SupportsDeprecatedScanRow {
     private final StructType schema = new StructType().add("a", "int").add("b", "int");
 
     @Override
@@ -43,7 +43,7 @@ public class JavaPartitionAwareDataSource implements DataSourceV2, ReadSupport {
     }
 
     @Override
-    public List<DataReaderFactory<Row>> createDataReaderFactories() {
+    public List<ReadTask<Row>> createDataReaderFactories() {
       return java.util.Arrays.asList(
         new SpecificDataReaderFactory(new int[]{1, 1, 3}, new int[]{4, 4, 6}),
         new SpecificDataReaderFactory(new int[]{2, 4, 4}, new int[]{6, 2, 2}));
@@ -73,7 +73,7 @@ public class JavaPartitionAwareDataSource implements DataSourceV2, ReadSupport {
     }
   }
 
-  static class SpecificDataReaderFactory implements DataReaderFactory<Row>, DataReader<Row> {
+  static class SpecificDataReaderFactory implements ReadTask<Row>, DataReader<Row> {
     private int[] i;
     private int[] j;
     private int current = -1;

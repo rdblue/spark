@@ -26,13 +26,14 @@ import org.apache.spark.sql.sources.v2.DataSourceV2;
 import org.apache.spark.sql.sources.v2.DataSourceOptions;
 import org.apache.spark.sql.sources.v2.ReadSupport;
 import org.apache.spark.sql.sources.v2.reader.DataReader;
-import org.apache.spark.sql.sources.v2.reader.DataReaderFactory;
+import org.apache.spark.sql.sources.v2.reader.ReadTask;
 import org.apache.spark.sql.sources.v2.reader.DataSourceReader;
+import org.apache.spark.sql.sources.v2.reader.SupportsDeprecatedScanRow;
 import org.apache.spark.sql.types.StructType;
 
 public class JavaSimpleDataSourceV2 implements DataSourceV2, ReadSupport {
 
-  class Reader implements DataSourceReader {
+  class Reader implements DataSourceReader, SupportsDeprecatedScanRow {
     private final StructType schema = new StructType().add("i", "int").add("j", "int");
 
     @Override
@@ -41,14 +42,14 @@ public class JavaSimpleDataSourceV2 implements DataSourceV2, ReadSupport {
     }
 
     @Override
-    public List<DataReaderFactory<Row>> createDataReaderFactories() {
+    public List<ReadTask<Row>> createDataReaderFactories() {
       return java.util.Arrays.asList(
         new JavaSimpleDataReaderFactory(0, 5),
         new JavaSimpleDataReaderFactory(5, 10));
     }
   }
 
-  static class JavaSimpleDataReaderFactory implements DataReaderFactory<Row>, DataReader<Row> {
+  static class JavaSimpleDataReaderFactory implements ReadTask<Row>, DataReader<Row> {
     private int start;
     private int end;
 

@@ -23,6 +23,7 @@ import test.org.apache.spark.sql.sources.v2._
 
 import org.apache.spark.SparkException
 import org.apache.spark.sql.{AnalysisException, DataFrame, QueryTest, Row}
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.datasources.v2.{DataSourceV2Relation, DataSourceV2ScanExec}
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
@@ -343,10 +344,10 @@ class DataSourceV2Suite extends QueryTest with SharedSQLContext {
 
 class SimpleSinglePartitionSource extends DataSourceV2 with ReadSupport {
 
-  class Reader extends DataSourceReader {
+  class Reader extends DataSourceReader with SupportsDeprecatedScanRow {
     override def readSchema(): StructType = new StructType().add("i", "int").add("j", "int")
 
-    override def createDataReaderFactories(): JList[DataReaderFactory[Row]] = {
+    override def createDataReaderFactories(): JList[ReadTask[Row]] = {
       java.util.Arrays.asList(new SimpleDataReaderFactory(0, 5))
     }
   }
@@ -356,10 +357,10 @@ class SimpleSinglePartitionSource extends DataSourceV2 with ReadSupport {
 
 class SimpleDataSourceV2 extends DataSourceV2 with ReadSupport {
 
-  class Reader extends DataSourceReader {
+  class Reader extends DataSourceReader with SupportsDeprecatedScanRow {
     override def readSchema(): StructType = new StructType().add("i", "int").add("j", "int")
 
-    override def createDataReaderFactories(): JList[DataReaderFactory[Row]] = {
+    override def createDataReaderFactories(): JList[ReadTask[Row]] = {
       java.util.Arrays.asList(new SimpleDataReaderFactory(0, 5), new SimpleDataReaderFactory(5, 10))
     }
   }
@@ -368,7 +369,7 @@ class SimpleDataSourceV2 extends DataSourceV2 with ReadSupport {
 }
 
 class SimpleDataReaderFactory(start: Int, end: Int)
-  extends DataReaderFactory[Row]
+  extends ReadTask[Row]
   with DataReader[Row] {
   private var current = start - 1
 
@@ -388,8 +389,8 @@ class SimpleDataReaderFactory(start: Int, end: Int)
 
 class AdvancedDataSourceV2 extends DataSourceV2 with ReadSupport {
 
-  class Reader extends DataSourceReader
-    with SupportsPushDownRequiredColumns with SupportsPushDownFilters {
+  class Reader extends DataSourceReader with SupportsDeprecatedScanRow
+      with SupportsPushDownRequiredColumns with SupportsPushDownFilters {
 
     var requiredSchema = new StructType().add("i", "int").add("j", "int")
     var filters = Array.empty[Filter]
@@ -413,12 +414,12 @@ class AdvancedDataSourceV2 extends DataSourceV2 with ReadSupport {
       requiredSchema
     }
 
-    override def createDataReaderFactories(): JList[DataReaderFactory[Row]] = {
+    override def createDataReaderFactories(): JList[ReadTask[Row]] = {
       val lowerBound = filters.collect {
         case GreaterThan("i", v: Int) => v
       }.headOption
 
-      val res = new ArrayList[DataReaderFactory[Row]]
+      val res = new ArrayList[ReadTask[Row]]
 
       if (lowerBound.isEmpty) {
         res.add(new AdvancedDataReaderFactory(0, 5, requiredSchema))
@@ -438,7 +439,7 @@ class AdvancedDataSourceV2 extends DataSourceV2 with ReadSupport {
 }
 
 class AdvancedDataReaderFactory(start: Int, end: Int, requiredSchema: StructType)
-  extends DataReaderFactory[Row] with DataReader[Row] {
+  extends ReadTask[Row] with DataReader[Row] {
 
   private var current = start - 1
 
@@ -465,10 +466,10 @@ class AdvancedDataReaderFactory(start: Int, end: Int, requiredSchema: StructType
 
 class UnsafeRowDataSourceV2 extends DataSourceV2 with ReadSupport {
 
-  class Reader extends DataSourceReader with SupportsScanUnsafeRow {
+  class Reader extends DataSourceReader {
     override def readSchema(): StructType = new StructType().add("i", "int").add("j", "int")
 
-    override def createUnsafeRowReaderFactories(): JList[DataReaderFactory[UnsafeRow]] = {
+    override def createReadTasks(): JList[ReadTask[InternalRow]] = {
       java.util.Arrays.asList(new UnsafeRowDataReaderFactory(0, 5),
         new UnsafeRowDataReaderFactory(5, 10))
     }
@@ -478,20 +479,20 @@ class UnsafeRowDataSourceV2 extends DataSourceV2 with ReadSupport {
 }
 
 class UnsafeRowDataReaderFactory(start: Int, end: Int)
-  extends DataReaderFactory[UnsafeRow] with DataReader[UnsafeRow] {
+  extends ReadTask[InternalRow] with DataReader[InternalRow] {
 
   private val row = new UnsafeRow(2)
   row.pointTo(new Array[Byte](8 * 3), 8 * 3)
 
   private var current = start - 1
 
-  override def createDataReader(): DataReader[UnsafeRow] = this
+  override def createDataReader(): DataReader[InternalRow] = this
 
   override def next(): Boolean = {
     current += 1
     current < end
   }
-  override def get(): UnsafeRow = {
+  override def get(): InternalRow = {
     row.setInt(0, current)
     row.setInt(1, -current)
     row
@@ -502,8 +503,8 @@ class UnsafeRowDataReaderFactory(start: Int, end: Int)
 
 class SchemaRequiredDataSource extends DataSourceV2 with ReadSupportWithSchema {
 
-  class Reader(val readSchema: StructType) extends DataSourceReader {
-    override def createDataReaderFactories(): JList[DataReaderFactory[Row]] =
+  class Reader(val readSchema: StructType) extends DataSourceReader with SupportsDeprecatedScanRow {
+    override def createDataReaderFactories(): JList[ReadTask[Row]] =
       java.util.Collections.emptyList()
   }
 
@@ -516,7 +517,7 @@ class BatchDataSourceV2 extends DataSourceV2 with ReadSupport {
   class Reader extends DataSourceReader with SupportsScanColumnarBatch {
     override def readSchema(): StructType = new StructType().add("i", "int").add("j", "int")
 
-    override def createBatchDataReaderFactories(): JList[DataReaderFactory[ColumnarBatch]] = {
+    override def createBatchReadTasks(): JList[ReadTask[ColumnarBatch]] = {
       java.util.Arrays.asList(new BatchDataReaderFactory(0, 50), new BatchDataReaderFactory(50, 90))
     }
   }
@@ -525,7 +526,7 @@ class BatchDataSourceV2 extends DataSourceV2 with ReadSupport {
 }
 
 class BatchDataReaderFactory(start: Int, end: Int)
-  extends DataReaderFactory[ColumnarBatch] with DataReader[ColumnarBatch] {
+  extends ReadTask[ColumnarBatch] with DataReader[ColumnarBatch] {
 
   private final val BATCH_SIZE = 20
   private lazy val i = new OnHeapColumnVector(BATCH_SIZE, IntegerType)
@@ -565,10 +566,11 @@ class BatchDataReaderFactory(start: Int, end: Int)
 
 class PartitionAwareDataSource extends DataSourceV2 with ReadSupport {
 
-  class Reader extends DataSourceReader with SupportsReportPartitioning {
+  class Reader extends DataSourceReader
+      with SupportsDeprecatedScanRow with SupportsReportPartitioning {
     override def readSchema(): StructType = new StructType().add("a", "int").add("b", "int")
 
-    override def createDataReaderFactories(): JList[DataReaderFactory[Row]] = {
+    override def createDataReaderFactories(): JList[ReadTask[Row]] = {
       // Note that we don't have same value of column `a` across partitions.
       java.util.Arrays.asList(
         new SpecificDataReaderFactory(Array(1, 1, 3), Array(4, 4, 6)),
@@ -590,8 +592,7 @@ class PartitionAwareDataSource extends DataSourceV2 with ReadSupport {
   override def createReader(options: DataSourceOptions): DataSourceReader = new Reader
 }
 
-class SpecificDataReaderFactory(i: Array[Int], j: Array[Int])
-  extends DataReaderFactory[Row]
+class SpecificDataReaderFactory(i: Array[Int], j: Array[Int]) extends ReadTask[Row]
   with DataReader[Row] {
   assert(i.length == j.length)
 

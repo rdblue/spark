@@ -20,12 +20,11 @@ package org.apache.spark.sql.execution.streaming.continuous
 import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, TimeUnit}
 import java.util.concurrent.atomic.AtomicBoolean
 
-import scala.collection.JavaConverters._
-
 import org.apache.spark._
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.datasources.v2.{DataSourceRDDPartition, RowToUnsafeDataReader}
 import org.apache.spark.sql.sources.v2.reader._
@@ -35,8 +34,8 @@ import org.apache.spark.util.ThreadUtils
 class ContinuousDataSourceRDD(
     sc: SparkContext,
     sqlContext: SQLContext,
-    @transient private val readerFactories: Seq[DataReaderFactory[UnsafeRow]])
-  extends RDD[UnsafeRow](sc, Nil) {
+    @transient private val readerFactories: Seq[ReadTask[InternalRow]])
+  extends RDD[InternalRow](sc, Nil) {
 
   private val dataQueueSize = sqlContext.conf.continuousStreamingExecutorQueueSize
   private val epochPollIntervalMs = sqlContext.conf.continuousStreamingExecutorPollIntervalMs
@@ -47,13 +46,13 @@ class ContinuousDataSourceRDD(
     }.toArray
   }
 
-  override def compute(split: Partition, context: TaskContext): Iterator[UnsafeRow] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
     // If attempt number isn't 0, this is a task retry, which we don't support.
     if (context.attemptNumber() != 0) {
       throw new ContinuousTaskRetryException()
     }
 
-    val reader = split.asInstanceOf[DataSourceRDDPartition[UnsafeRow]]
+    val reader = split.asInstanceOf[DataSourceRDDPartition[InternalRow]]
       .readerFactory.createDataReader()
 
     val coordinatorId = context.getLocalProperty(ContinuousExecution.EPOCH_COORDINATOR_ID_KEY)
@@ -61,7 +60,7 @@ class ContinuousDataSourceRDD(
     // This queue contains two types of messages:
     // * (null, null) representing an epoch boundary.
     // * (row, off) containing a data row and its corresponding PartitionOffset.
-    val queue = new ArrayBlockingQueue[(UnsafeRow, PartitionOffset)](dataQueueSize)
+    val queue = new ArrayBlockingQueue[(InternalRow, PartitionOffset)](dataQueueSize)
 
     val epochPollFailed = new AtomicBoolean(false)
     val epochPollExecutor = ThreadUtils.newDaemonSingleThreadScheduledExecutor(
@@ -84,10 +83,10 @@ class ContinuousDataSourceRDD(
     })
 
     val epochEndpoint = EpochCoordinatorRef.get(coordinatorId, SparkEnv.get)
-    new Iterator[UnsafeRow] {
+    new Iterator[InternalRow] {
       private val POLL_TIMEOUT_MS = 1000
 
-      private var currentEntry: (UnsafeRow, PartitionOffset) = _
+      private var currentEntry: (InternalRow, PartitionOffset) = _
       private var currentOffset: PartitionOffset = startOffset
       private var currentEpoch =
         context.getLocalProperty(ContinuousExecution.START_EPOCH_KEY).toLong
@@ -123,7 +122,7 @@ class ContinuousDataSourceRDD(
         }
       }
 
-      override def next(): UnsafeRow = {
+      override def next(): InternalRow = {
         if (currentEntry == null) throw new NoSuchElementException("No current row was set")
         val r = currentEntry._1
         currentEntry = null
@@ -140,7 +139,7 @@ class ContinuousDataSourceRDD(
 case class EpochPackedPartitionOffset(epoch: Long) extends PartitionOffset
 
 class EpochPollRunnable(
-    queue: BlockingQueue[(UnsafeRow, PartitionOffset)],
+    queue: BlockingQueue[(InternalRow, PartitionOffset)],
     context: TaskContext,
     failedFlag: AtomicBoolean)
   extends Thread with Logging {
@@ -168,8 +167,8 @@ class EpochPollRunnable(
 }
 
 class DataReaderThread(
-    reader: DataReader[UnsafeRow],
-    queue: BlockingQueue[(UnsafeRow, PartitionOffset)],
+    reader: DataReader[InternalRow],
+    queue: BlockingQueue[(InternalRow, PartitionOffset)],
     context: TaskContext,
     failedFlag: AtomicBoolean)
   extends Thread(
@@ -210,9 +209,10 @@ class DataReaderThread(
 }
 
 object ContinuousDataSourceRDD {
-  private[continuous] def getBaseReader(reader: DataReader[UnsafeRow]): ContinuousDataReader[_] = {
+  private[continuous] def getBaseReader(
+      reader: DataReader[InternalRow]): ContinuousDataReader[_] = {
     reader match {
-      case r: ContinuousDataReader[UnsafeRow] => r
+      case r: ContinuousDataReader[InternalRow] => r
       case wrapped: RowToUnsafeDataReader =>
         wrapped.rowReader.asInstanceOf[ContinuousDataReader[Row]]
       case _ =>

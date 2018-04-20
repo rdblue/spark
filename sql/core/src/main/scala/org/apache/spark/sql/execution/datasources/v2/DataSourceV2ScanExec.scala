@@ -74,19 +74,20 @@ case class DataSourceV2ScanExec(
     case _ => super.outputPartitioning
   }
 
-  private lazy val readerFactories: Seq[DataReaderFactory[UnsafeRow]] = reader match {
-    case r: SupportsScanUnsafeRow => r.createUnsafeRowReaderFactories().asScala
-    case _ =>
-      reader.createDataReaderFactories().asScala.map {
-        new RowToUnsafeRowDataReaderFactory(_, reader.readSchema()): DataReaderFactory[UnsafeRow]
+  private lazy val readerFactories: Seq[ReadTask[InternalRow]] = reader match {
+    case r: SupportsDeprecatedScanRow =>
+      r.createDataReaderFactories().asScala.map {
+        new RowToUnsafeRowDataReaderFactory(_, reader.readSchema())
       }
+    case _ =>
+      reader.createReadTasks().asScala
   }
 
-  private lazy val batchReaderFactories: Seq[DataReaderFactory[ColumnarBatch]] = reader match {
+  private lazy val batchReaderFactories: Seq[ReadTask[ColumnarBatch]] = reader match {
     case r: SupportsScanColumnarBatch if r.enableBatchRead() =>
       assert(!reader.isInstanceOf[ContinuousReader],
         "continuous stream reader does not support columnar read yet.")
-      r.createBatchDataReaderFactories().asScala
+      r.createBatchReadTasks().asScala
   }
 
   private lazy val inputRDD: RDD[InternalRow] = reader match {
@@ -96,13 +97,13 @@ case class DataSourceV2ScanExec(
           sparkContext.env)
         .askSync[Unit](SetReaderPartitions(readerFactories.size))
       new ContinuousDataSourceRDD(sparkContext, sqlContext, readerFactories)
-        .asInstanceOf[RDD[InternalRow]]
 
     case r: SupportsScanColumnarBatch if r.enableBatchRead() =>
+      // TODO: is this actually an instance of RDD[InternalRow]?
       new DataSourceRDD(sparkContext, batchReaderFactories).asInstanceOf[RDD[InternalRow]]
 
     case _ =>
-      new DataSourceRDD(sparkContext, readerFactories).asInstanceOf[RDD[InternalRow]]
+      new DataSourceRDD(sparkContext, readerFactories)
   }
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = Seq(inputRDD)
@@ -127,23 +128,23 @@ case class DataSourceV2ScanExec(
   }
 }
 
-class RowToUnsafeRowDataReaderFactory(rowReaderFactory: DataReaderFactory[Row], schema: StructType)
-  extends DataReaderFactory[UnsafeRow] {
+class RowToUnsafeRowDataReaderFactory(rowReaderFactory: ReadTask[Row], schema: StructType)
+  extends ReadTask[InternalRow] {
 
   override def preferredLocations: Array[String] = rowReaderFactory.preferredLocations
 
-  override def createDataReader: DataReader[UnsafeRow] = {
+  override def createDataReader: DataReader[InternalRow] = {
     new RowToUnsafeDataReader(
       rowReaderFactory.createDataReader, RowEncoder.apply(schema).resolveAndBind())
   }
 }
 
 class RowToUnsafeDataReader(val rowReader: DataReader[Row], encoder: ExpressionEncoder[Row])
-  extends DataReader[UnsafeRow] {
+  extends DataReader[InternalRow] {
 
   override def next: Boolean = rowReader.next
 
-  override def get: UnsafeRow = encoder.toRow(rowReader.get).asInstanceOf[UnsafeRow]
+  override def get: InternalRow = encoder.toRow(rowReader.get)
 
   override def close(): Unit = rowReader.close()
 }

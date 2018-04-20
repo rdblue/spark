@@ -21,11 +21,11 @@ import org.apache.spark.annotation.InterfaceStability;
 import org.apache.spark.sql.sources.v2.reader.streaming.PartitionOffset;
 
 /**
- * A mix-in interface for {@link DataReaderFactory}. Continuous data reader factories can
+ * A mix-in interface for {@link ReadTask}. Continuous data reader factories can
  * implement this interface to provide creating {@link DataReader} with particular offset.
  */
 @InterfaceStability.Evolving
-public interface ContinuousDataReaderFactory<T> extends DataReaderFactory<T> {
+public interface ContinuousDataReaderFactory<T> extends ReadTask<T> {
   /**
    * Create a DataReader with particular offset as its startOffset.
    *

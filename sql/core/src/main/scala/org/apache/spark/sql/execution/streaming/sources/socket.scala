@@ -33,7 +33,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.execution.streaming.LongOffset
 import org.apache.spark.sql.sources.DataSourceRegister
 import org.apache.spark.sql.sources.v2.{DataSourceOptions, DataSourceV2, MicroBatchReadSupport}
-import org.apache.spark.sql.sources.v2.reader.{DataReader, DataReaderFactory}
+import org.apache.spark.sql.sources.v2.reader.{DataReader, ReadTask, SupportsDeprecatedScanRow}
 import org.apache.spark.sql.sources.v2.reader.streaming.{MicroBatchReader, Offset}
 import org.apache.spark.sql.types.{StringType, StructField, StructType, TimestampType}
 
@@ -49,7 +49,8 @@ object TextSocketMicroBatchReader {
  * debugging. This MicroBatchReader will *not* work in production applications due to multiple
  * reasons, including no support for fault recovery.
  */
-class TextSocketMicroBatchReader(options: DataSourceOptions) extends MicroBatchReader with Logging {
+class TextSocketMicroBatchReader(options: DataSourceOptions) extends MicroBatchReader
+    with SupportsDeprecatedScanRow with Logging {
 
   private var startOffset: Offset = _
   private var endOffset: Offset = _
@@ -140,7 +141,7 @@ class TextSocketMicroBatchReader(options: DataSourceOptions) extends MicroBatchR
     }
   }
 
-  override def createDataReaderFactories(): JList[DataReaderFactory[Row]] = {
+  override def createDataReaderFactories(): JList[ReadTask[Row]] = {
     assert(startOffset != null && endOffset != null,
       "start offset and end offset should already be set before create read tasks.")
 
@@ -165,7 +166,7 @@ class TextSocketMicroBatchReader(options: DataSourceOptions) extends MicroBatchR
 
     (0 until numPartitions).map { i =>
       val slice = slices(i)
-      new DataReaderFactory[Row] {
+      new ReadTask[Row] {
         override def createDataReader(): DataReader[Row] = new DataReader[Row] {
           private var currentIdx = -1
 

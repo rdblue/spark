@@ -38,7 +38,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.{ManualClock, SystemClock}
 
 class RateStreamMicroBatchReader(options: DataSourceOptions, checkpointLocation: String)
-  extends MicroBatchReader with Logging {
+  extends MicroBatchReader with SupportsDeprecatedScanRow with Logging {
   import RateStreamProvider._
 
   private[sources] val clock = {
@@ -134,7 +134,7 @@ class RateStreamMicroBatchReader(options: DataSourceOptions, checkpointLocation:
     LongOffset(json.toLong)
   }
 
-  override def createDataReaderFactories(): java.util.List[DataReaderFactory[Row]] = {
+  override def createDataReaderFactories(): java.util.List[ReadTask[Row]] = {
     val startSeconds = LongOffset.convert(start).map(_.offset).getOrElse(0L)
     val endSeconds = LongOffset.convert(end).map(_.offset).getOrElse(0L)
     assert(startSeconds <= endSeconds, s"startSeconds($startSeconds) > endSeconds($endSeconds)")
@@ -169,7 +169,7 @@ class RateStreamMicroBatchReader(options: DataSourceOptions, checkpointLocation:
     (0 until numPartitions).map { p =>
       new RateStreamMicroBatchDataReaderFactory(
         p, numPartitions, rangeStart, rangeEnd, localStartTimeMs, relativeMsPerValue)
-        : DataReaderFactory[Row]
+        : ReadTask[Row]
     }.toList.asJava
   }
 
@@ -188,7 +188,7 @@ class RateStreamMicroBatchDataReaderFactory(
     rangeStart: Long,
     rangeEnd: Long,
     localStartTimeMs: Long,
-    relativeMsPerValue: Double) extends DataReaderFactory[Row] {
+    relativeMsPerValue: Double) extends ReadTask[Row] {
 
   override def createDataReader(): DataReader[Row] = new RateStreamMicroBatchDataReader(
     partitionId, numPartitions, rangeStart, rangeEnd, localStartTimeMs, relativeMsPerValue)

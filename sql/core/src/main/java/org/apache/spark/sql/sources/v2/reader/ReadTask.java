@@ -22,17 +22,17 @@ import java.io.Serializable;
 import org.apache.spark.annotation.InterfaceStability;
 
 /**
- * A reader factory returned by {@link DataSourceReader#createDataReaderFactories()} and is
+ * A reader factory returned by {@link DataSourceReader#createReadTasks()} and is
  * responsible for creating the actual data reader. The relationship between
- * {@link DataReaderFactory} and {@link DataReader}
+ * {@link ReadTask} and {@link DataReader}
  * is similar to the relationship between {@link Iterable} and {@link java.util.Iterator}.
  *
- * Note that, the reader factory will be serialized and sent to executors, then the data reader
- * will be created on executors and do the actual reading. So {@link DataReaderFactory} must be
+ * Note that this read task will be serialized and sent to executors, then the data reader
+ * will be created on executors and do the actual reading. So {@link ReadTask} must be
  * serializable and {@link DataReader} doesn't need to be.
  */
 @InterfaceStability.Evolving
-public interface DataReaderFactory<T> extends Serializable {
+public interface ReadTask<T> extends Serializable {
 
   /**
    * The preferred locations where the data reader returned by this reader factory can run faster,
