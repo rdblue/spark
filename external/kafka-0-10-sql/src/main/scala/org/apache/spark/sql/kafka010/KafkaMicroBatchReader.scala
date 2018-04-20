@@ -310,7 +310,7 @@ private[kafka010] case class KafkaMicroBatchDataReaderFactory(
 
   override def preferredLocations(): Array[String] = offsetRange.preferredLoc.toArray
 
-  override def createDataReader(): DataReader[UnsafeRow] = new KafkaMicroBatchDataReader(
+  override def createDataReader(): DataReader[InternalRow] = new KafkaMicroBatchDataReader(
     offsetRange, executorKafkaParams, pollTimeoutMs, failOnDataLoss, reuseKafkaConsumer)
 }
 
@@ -320,7 +320,7 @@ private[kafka010] case class KafkaMicroBatchDataReader(
     executorKafkaParams: ju.Map[String, Object],
     pollTimeoutMs: Long,
     failOnDataLoss: Boolean,
-    reuseKafkaConsumer: Boolean) extends DataReader[UnsafeRow] with Logging {
+    reuseKafkaConsumer: Boolean) extends DataReader[InternalRow] with Logging {
 
   private val consumer = KafkaDataConsumer.acquire(
     offsetRange.topicPartition, executorKafkaParams, reuseKafkaConsumer)
@@ -329,7 +329,7 @@ private[kafka010] case class KafkaMicroBatchDataReader(
   private val converter = new KafkaRecordToUnsafeRowConverter
 
   private var nextOffset = rangeToRead.fromOffset
-  private var nextRow: UnsafeRow = _
+  private var nextRow: InternalRow = _
 
   override def next(): Boolean = {
     if (nextOffset < rangeToRead.untilOffset) {
@@ -345,7 +345,7 @@ private[kafka010] case class KafkaMicroBatchDataReader(
     }
   }
 
-  override def get(): UnsafeRow = {
+  override def get(): InternalRow = {
     assert(nextRow != null)
     nextOffset += 1
     nextRow
