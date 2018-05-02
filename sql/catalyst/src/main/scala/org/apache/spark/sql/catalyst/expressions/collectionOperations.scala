@@ -18,8 +18,8 @@ package org.apache.spark.sql.catalyst.expressions
 
 import java.util.Comparator
 
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.util.{ArrayData, GenericArrayData, MapData, TypeUtils}
 import org.apache.spark.sql.types._
@@ -133,6 +133,8 @@ case class MapValues(child: Expression)
 // scalastyle:on line.size.limit
 case class SortArray(base: Expression, ascendingOrder: Expression)
   extends BinaryExpression with ExpectsInputTypes with CodegenFallback {
+
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
 
   def this(e: Expression) = this(e, Literal(true))
 
@@ -315,6 +317,8 @@ case class Reverse(child: Expression) extends UnaryExpression with ImplicitCastI
 case class ArrayContains(left: Expression, right: Expression)
   extends BinaryExpression with ImplicitCastInputTypes {
 
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
+
   override def dataType: DataType = BooleanType
 
   override def inputTypes: Seq[AbstractDataType] = right.dataType match {
@@ -390,6 +394,8 @@ case class ArrayContains(left: Expression, right: Expression)
   """, since = "2.4.0")
 case class ArrayMin(child: Expression) extends UnaryExpression with ImplicitCastInputTypes {
 
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
+
   override def nullable: Boolean = true
 
   override def inputTypes: Seq[AbstractDataType] = Seq(ArrayType)
@@ -454,6 +460,8 @@ case class ArrayMin(child: Expression) extends UnaryExpression with ImplicitCast
        20
   """, since = "2.4.0")
 case class ArrayMax(child: Expression) extends UnaryExpression with ImplicitCastInputTypes {
+
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
 
   override def nullable: Boolean = true
 
@@ -529,6 +537,8 @@ case class ArrayMax(child: Expression) extends UnaryExpression with ImplicitCast
   since = "2.4.0")
 case class ArrayPosition(left: Expression, right: Expression)
   extends BinaryExpression with ImplicitCastInputTypes {
+
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
 
   override def dataType: DataType = LongType
   override def inputTypes: Seq[AbstractDataType] =

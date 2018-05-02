@@ -20,8 +20,8 @@ package org.apache.spark.sql.execution.aggregate
 import scala.language.existentials
 
 import org.apache.spark.sql.Encoder
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.UnresolvedDeserializer
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.encoders.encoderFor
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateFunction, DeclarativeAggregate, TypedImperativeAggregate}
@@ -259,14 +259,14 @@ case class ComplexTypedAggregateExpression(
     if (resultObj == null) {
       null
     } else {
-      resultObjToRow(InternalRow(resultObj)).get(0, dataType)
+      resultObjToRow(InternalData.row(resultObj)).get(0, dataType)
     }
   }
 
   private lazy val bufferObjToRow = UnsafeProjection.create(bufferSerializer)
 
   override def serialize(buffer: Any): Array[Byte] = {
-    bufferObjToRow(InternalRow(buffer)).getBytes
+    bufferObjToRow(InternalData.row(buffer)).getBytes
   }
 
   private lazy val bufferRow = new UnsafeRow(bufferSerializer.length)

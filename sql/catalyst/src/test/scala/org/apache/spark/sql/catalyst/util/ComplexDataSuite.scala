@@ -20,7 +20,8 @@ package org.apache.spark.sql.catalyst.util
 import scala.collection._
 
 import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.catalyst.InternalRow
+
+import org.apache.spark.sql.catalyst.data.InternalData
 import org.apache.spark.sql.catalyst.expressions.{BoundReference, GenericInternalRow, SpecificInternalRow, UnsafeMapData, UnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.codegen.GenerateUnsafeProjection
 import org.apache.spark.sql.types.{DataType, IntegerType, MapType, StringType}
@@ -58,49 +59,49 @@ class ComplexDataSuite extends SparkFunSuite {
 
   test("GenericInternalRow.copy return a new instance that is independent from the old one") {
     val project = GenerateUnsafeProjection.generate(Seq(BoundReference(0, StringType, true)))
-    val unsafeRow = project.apply(InternalRow(utf8("a")))
+    val unsafeRow = project.apply(InternalData.row(utf8("a")))
 
     val genericRow = new GenericInternalRow(Array[Any](unsafeRow.getUTF8String(0)))
     val copiedGenericRow = genericRow.copy()
     assert(copiedGenericRow.getString(0) == "a")
-    project.apply(InternalRow(UTF8String.fromString("b")))
+    project.apply(InternalData.row(UTF8String.fromString("b")))
     // The copied internal row should not be changed externally.
     assert(copiedGenericRow.getString(0) == "a")
   }
 
   test("SpecificMutableRow.copy return a new instance that is independent from the old one") {
     val project = GenerateUnsafeProjection.generate(Seq(BoundReference(0, StringType, true)))
-    val unsafeRow = project.apply(InternalRow(utf8("a")))
+    val unsafeRow = project.apply(InternalData.row(utf8("a")))
 
     val mutableRow = new SpecificInternalRow(Seq(StringType))
     mutableRow(0) = unsafeRow.getUTF8String(0)
     val copiedMutableRow = mutableRow.copy()
     assert(copiedMutableRow.getString(0) == "a")
-    project.apply(InternalRow(UTF8String.fromString("b")))
+    project.apply(InternalData.row(UTF8String.fromString("b")))
     // The copied internal row should not be changed externally.
     assert(copiedMutableRow.getString(0) == "a")
   }
 
   test("GenericArrayData.copy return a new instance that is independent from the old one") {
     val project = GenerateUnsafeProjection.generate(Seq(BoundReference(0, StringType, true)))
-    val unsafeRow = project.apply(InternalRow(utf8("a")))
+    val unsafeRow = project.apply(InternalData.row(utf8("a")))
 
     val genericArray = new GenericArrayData(Array[Any](unsafeRow.getUTF8String(0)))
     val copiedGenericArray = genericArray.copy()
     assert(copiedGenericArray.getUTF8String(0).toString == "a")
-    project.apply(InternalRow(UTF8String.fromString("b")))
+    project.apply(InternalData.row(UTF8String.fromString("b")))
     // The copied array data should not be changed externally.
     assert(copiedGenericArray.getUTF8String(0).toString == "a")
   }
 
   test("copy on nested complex type") {
     val project = GenerateUnsafeProjection.generate(Seq(BoundReference(0, StringType, true)))
-    val unsafeRow = project.apply(InternalRow(utf8("a")))
+    val unsafeRow = project.apply(InternalData.row(utf8("a")))
 
-    val arrayOfRow = new GenericArrayData(Array[Any](InternalRow(unsafeRow.getUTF8String(0))))
+    val arrayOfRow = new GenericArrayData(Array[Any](InternalData.row(unsafeRow.getUTF8String(0))))
     val copied = arrayOfRow.copy()
     assert(copied.getStruct(0, 1).getUTF8String(0).toString == "a")
-    project.apply(InternalRow(UTF8String.fromString("b")))
+    project.apply(InternalData.row(UTF8String.fromString("b")))
     // The copied data should not be changed externally.
     assert(copied.getStruct(0, 1).getUTF8String(0).toString == "a")
   }

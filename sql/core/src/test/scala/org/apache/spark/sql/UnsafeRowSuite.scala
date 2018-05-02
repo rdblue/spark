@@ -20,8 +20,9 @@ package org.apache.spark.sql
 import java.io.ByteArrayOutputStream
 
 import org.apache.spark.{SparkConf, SparkFunSuite}
+
 import org.apache.spark.serializer.{JavaSerializer, KryoSerializer}
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.GenericArrayData
 import org.apache.spark.sql.types._
@@ -67,7 +68,7 @@ class UnsafeRowSuite extends SparkFunSuite {
   }
 
   test("writeToStream") {
-    val row = InternalRow.apply(UTF8String.fromString("hello"), UTF8String.fromString("world"), 123)
+    val row = catalyst.data.InternalRow.apply(UTF8String.fromString("hello"), UTF8String.fromString("world"), 123)
     val arrayBackedUnsafeRow: UnsafeRow =
       UnsafeProjection.create(Array[DataType](StringType, StringType, IntegerType)).apply(row)
     assert(arrayBackedUnsafeRow.getBaseObject.isInstanceOf[Array[Byte]])
@@ -120,14 +121,14 @@ class UnsafeRowSuite extends SparkFunSuite {
   }
 
   test("calling getDouble() and getFloat() on null columns") {
-    val row = InternalRow.apply(null, null)
+    val row = catalyst.data.InternalRow.apply(null, null)
     val unsafeRow = UnsafeProjection.create(Array[DataType](FloatType, DoubleType)).apply(row)
     assert(unsafeRow.getFloat(0) === row.getFloat(0))
     assert(unsafeRow.getDouble(1) === row.getDouble(1))
   }
 
   test("calling get(ordinal, datatype) on null columns") {
-    val row = InternalRow.apply(null)
+    val row = catalyst.data.InternalRow.apply(null)
     val unsafeRow = UnsafeProjection.create(Array[DataType](NullType)).apply(row)
     for (dataType <- DataTypeTestUtils.atomicTypes) {
       assert(unsafeRow.get(0, dataType) === null)
@@ -173,7 +174,7 @@ class UnsafeRowSuite extends SparkFunSuite {
   }
 
   test("calling hashCode on unsafe array returned by getArray(ordinal)") {
-    val row = InternalRow.apply(new GenericArrayData(Array(1L)))
+    val row = catalyst.data.InternalRow.apply(new GenericArrayData(Array(1L)))
     val unsafeRow = UnsafeProjection.create(Array[DataType](ArrayType(LongType))).apply(row)
     // Makes sure hashCode on unsafe array won't crash
     unsafeRow.getArray(0).hashCode()

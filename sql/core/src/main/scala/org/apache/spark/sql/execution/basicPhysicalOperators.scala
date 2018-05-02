@@ -21,8 +21,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 
 import org.apache.spark.{InterruptibleIterator, Partition, SparkContext, TaskContext}
+
 import org.apache.spark.rdd.{EmptyRDD, PartitionwiseSampledRDD, RDD}
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
@@ -356,7 +357,8 @@ case class RangeExec(range: org.apache.spark.sql.catalyst.plans.logical.Range)
     val rdd = if (start == end || (start < end ^ 0 < step)) {
       new EmptyRDD[InternalRow](sqlContext.sparkContext)
     } else {
-      sqlContext.sparkContext.parallelize(0 until numSlices, numSlices).map(i => InternalRow(i))
+      sqlContext.sparkContext.parallelize(0 until numSlices, numSlices)
+          .map(i => InternalData.row(i))
     }
     rdd :: Nil
   }

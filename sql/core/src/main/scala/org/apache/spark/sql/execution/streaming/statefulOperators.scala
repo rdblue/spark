@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit._
 import scala.collection.JavaConverters._
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.errors._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{GenerateUnsafeProjection, Predicate}
@@ -460,5 +460,5 @@ case class StreamingDeduplicateExec(
 
 object StreamingDeduplicateExec {
   private val EMPTY_ROW =
-    UnsafeProjection.create(Array[DataType](NullType)).apply(InternalRow.apply(null))
+    UnsafeProjection.create(Array[DataType](NullType)).apply(InternalData.row(null))
 }

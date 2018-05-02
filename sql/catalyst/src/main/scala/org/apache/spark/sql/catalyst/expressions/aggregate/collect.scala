@@ -20,8 +20,8 @@ package org.apache.spark.sql.catalyst.expressions.aggregate
 import scala.collection.generic.Growable
 import scala.collection.mutable
 
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util.GenericArrayData
 import org.apache.spark.sql.types._
@@ -33,6 +33,8 @@ import org.apache.spark.sql.types._
  * can cause GC paused and eventually OutOfMemory Errors.
  */
 abstract class Collect[T <: Growable[Any] with Iterable[Any]] extends TypedImperativeAggregate[T] {
+
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
 
   val child: Expression
 
@@ -71,7 +73,7 @@ abstract class Collect[T <: Growable[Any] with Iterable[Any]] extends TypedImper
 
   override def serialize(obj: T): Array[Byte] = {
     val array = new GenericArrayData(obj.toArray)
-    projection.apply(InternalRow.apply(array)).getBytes()
+    projection.apply(InternalRow.of(array)).getBytes()
   }
 
   override def deserialize(bytes: Array[Byte]): T = {

@@ -29,9 +29,10 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data
 import org.apache.spark.sql.catalyst.analysis.CastSupport
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.execution._
@@ -154,7 +155,7 @@ case class HiveTableScanExec(
 
         // Only partitioned values are needed here, since the predicate has already been bound to
         // partition key attribute references.
-        val row = InternalRow.fromSeq(castedValues)
+        val row = data.InternalRow.fromSeq(castedValues)
         shouldKeep.eval(row).asInstanceOf[Boolean]
       }
     }

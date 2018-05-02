@@ -17,9 +17,9 @@
 
 package org.apache.spark.sql.catalyst.expressions
 
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, GenericArrayData, TypeUtils}
 import org.apache.spark.sql.types._
@@ -333,7 +333,7 @@ trait CreateNamedStructLike extends Expression {
   }
 
   override def eval(input: InternalRow): Any = {
-    InternalRow(valExprs.map(_.eval(input)): _*)
+    InternalData.row(valExprs.map(_.eval(input)): _*)
   }
 }
 

@@ -18,7 +18,7 @@
 package org.apache.spark.sql.catalyst.expressions
 
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, CodeGenerator, ExprCode, FalseLiteral}
 import org.apache.spark.sql.types._
@@ -33,7 +33,7 @@ case class BoundReference(ordinal: Int, dataType: DataType, nullable: Boolean)
 
   override def toString: String = s"input[$ordinal, ${dataType.simpleString}, $nullable]"
 
-  private val accessor: (InternalRow, Int) => Any = InternalRow.getAccessor(dataType)
+  private val accessor: (InternalRow, Int) => Any = InternalData.getAccessor(dataType)
 
   // Use special getter for primitive types (for UnsafeRow)
   override def eval(input: InternalRow): Any = {

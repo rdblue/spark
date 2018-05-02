@@ -19,7 +19,7 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{execution, AnalysisException, Strategy}
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
@@ -424,7 +424,7 @@ abstract class SparkStrategies extends QueryPlanner[SparkPlan] {
     }
   }
 
-  protected lazy val singleRowRdd = sparkContext.parallelize(Seq(InternalRow()), 1)
+  protected lazy val singleRowRdd = sparkContext.parallelize(Seq(InternalData.row()), 1)
 
   object InMemoryScans extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {

@@ -23,7 +23,7 @@ import java.sql.{Date, Timestamp}
 import org.scalatest.Matchers
 
 import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.util._
 import org.apache.spark.sql.types.{IntegerType, LongType, _}
 import org.apache.spark.unsafe.array.ByteArrayMethods
@@ -272,8 +272,8 @@ class UnsafeRowConverterSuite extends SparkFunSuite with Matchers {
     val converter = factory.create(fieldTypes)
 
     val row = new GenericInternalRow(fieldTypes.length)
-    row.update(0, InternalRow(1))
-    row.update(1, InternalRow(InternalRow(2L)))
+    row.update(0, InternalData.row(1))
+    row.update(1, InternalData.row(InternalData.row(2L)))
 
     val unsafeRow: UnsafeRow = converter.apply(row)
     assert(unsafeRow.numFields == 2)
@@ -409,8 +409,8 @@ class UnsafeRowConverterSuite extends SparkFunSuite with Matchers {
     val converter = factory.create(fieldTypes)
 
     val row = new GenericInternalRow(fieldTypes.length)
-    row.update(0, InternalRow(createArray(1)))
-    row.update(1, createArray(InternalRow(2L)))
+    row.update(0, InternalData.row(createArray(1)))
+    row.update(1, createArray(InternalData.row(2L)))
 
     val unsafeRow: UnsafeRow = converter.apply(row)
     assert(unsafeRow.numFields() == 2)
@@ -448,8 +448,8 @@ class UnsafeRowConverterSuite extends SparkFunSuite with Matchers {
     val converter = factory.create(fieldTypes)
 
     val row = new GenericInternalRow(fieldTypes.length)
-    row.update(0, InternalRow(createMap(1)(2)))
-    row.update(1, createMap(3)(InternalRow(4L)))
+    row.update(0, InternalData.row(createMap(1)(2)))
+    row.update(1, createMap(3)(InternalData.row(4L)))
 
     val unsafeRow: UnsafeRow = converter.apply(row)
     assert(unsafeRow.numFields() == 2)

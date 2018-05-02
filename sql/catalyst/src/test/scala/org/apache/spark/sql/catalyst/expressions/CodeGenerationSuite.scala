@@ -22,7 +22,7 @@ import java.sql.Timestamp
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.expressions.objects._
@@ -148,7 +148,7 @@ class CodeGenerationSuite extends SparkFunSuite with ExpressionEvalHelper {
     val expressions = Seq(CreateStruct(List.fill(length)(EqualTo(Literal(1), Literal(1)))))
     val plan = GenerateMutableProjection.generate(expressions)
     val actual = plan(new GenericInternalRow(length)).toSeq(expressions.map(_.dataType))
-    val expected = Seq(InternalRow(Seq.fill(length)(true): _*))
+    val expected = Seq(InternalData.row(Seq.fill(length)(true): _*))
 
     if (!checkResult(actual, expected, expressions.head.dataType)) {
       fail(s"Incorrect Evaluation: expressions: $expressions, actual: $actual, expected: $expected")
@@ -164,7 +164,7 @@ class CodeGenerationSuite extends SparkFunSuite with ExpressionEvalHelper {
     val plan = GenerateMutableProjection.generate(expressions)
     val actual = plan(new GenericInternalRow(length)).toSeq(expressions.map(_.dataType))
     assert(actual.length == 1)
-    val expected = InternalRow(Seq.fill(length)(true): _*)
+    val expected = InternalData.row(Seq.fill(length)(true): _*)
 
     if (!checkResult(actual.head, expected, expressions.head.dataType)) {
       fail(s"Incorrect Evaluation: expressions: $expressions, actual: $actual, expected: $expected")
@@ -264,7 +264,7 @@ class CodeGenerationSuite extends SparkFunSuite with ExpressionEvalHelper {
     checkEvaluation(
       EqualTo(BoundReference(0, StringType, false), Literal.create("*/", StringType)),
       true,
-      InternalRow(UTF8String.fromString("*/")))
+      InternalData.row(UTF8String.fromString("*/")))
   }
 
   test("\\u in the data") {
@@ -273,7 +273,7 @@ class CodeGenerationSuite extends SparkFunSuite with ExpressionEvalHelper {
     checkEvaluation(
       EqualTo(BoundReference(0, StringType, false), Literal.create("\\u", StringType)),
       true,
-      InternalRow(UTF8String.fromString("\\u")))
+      InternalData.row(UTF8String.fromString("\\u")))
   }
 
   test("check compilation error doesn't occur caused by specific literal") {
@@ -332,7 +332,7 @@ class CodeGenerationSuite extends SparkFunSuite with ExpressionEvalHelper {
   }
 
   test("should not apply common subexpression elimination on conditional expressions") {
-    val row = InternalRow(null)
+    val row = InternalData.row(null)
     val bound = BoundReference(0, IntegerType, true)
     val assertNotNull = AssertNotNull(bound, Nil)
     val expr = If(IsNull(bound), Literal(1), Add(assertNotNull, assertNotNull))

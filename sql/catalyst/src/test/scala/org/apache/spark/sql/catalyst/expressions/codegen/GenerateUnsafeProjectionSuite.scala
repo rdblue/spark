@@ -18,7 +18,7 @@
 package org.apache.spark.sql.catalyst.expressions.codegen
 
 import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.expressions.BoundReference
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.types.{DataType, Decimal, StringType, StructType}
@@ -29,7 +29,7 @@ class GenerateUnsafeProjectionSuite extends SparkFunSuite {
     val dataType = (new StructType).add("a", StringType)
     val exprs = BoundReference(0, dataType, nullable = true) :: Nil
     val projection = GenerateUnsafeProjection.generate(exprs)
-    val result = projection.apply(InternalRow(AlwaysNull))
+    val result = projection.apply(InternalData.row(AlwaysNull))
     assert(!result.isNullAt(0))
     assert(result.getStruct(0, 1).isNullAt(0))
   }

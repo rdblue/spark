@@ -28,14 +28,14 @@ import scala.util.Try
 import org.apache.spark.{SparkConf, SparkEnv}
 import org.apache.spark.serializer._
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
 import org.apache.spark.sql.catalyst.ScalaReflection.universe.TermName
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, ArrayData, GenericArrayData, MapData}
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 import org.apache.spark.util.Utils
 
 /**
@@ -585,7 +585,7 @@ case class LambdaVariable(
     dataType: DataType,
     nullable: Boolean = true) extends LeafExpression with NonSQLExpression {
 
-  private val accessor: (InternalRow, Int) => Any = InternalRow.getAccessor(dataType)
+  private val accessor: (InternalRow, Int) => Any = InternalData.getAccessor(dataType)
 
   // Interpreted execution of `LambdaVariable` always get the 0-index element from input row.
   override def eval(input: InternalRow): Any = {

@@ -27,6 +27,7 @@ import javax.annotation.Nullable
 import scala.language.existentials
 
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util._
 import org.apache.spark.sql.types._
@@ -39,6 +40,7 @@ object CatalystTypeConverters {
   // The Predef.Map is scala.collection.immutable.Map.
   // Since the map values can be mutable, we explicitly import scala.collection.Map at here.
   import scala.collection.Map
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
 
   private def isPrimitive(dataType: DataType): Boolean = {
     dataType match {
@@ -107,7 +109,7 @@ object CatalystTypeConverters {
     /**
      * Given a Catalyst row, convert the value at column `column` to its Scala equivalent.
      */
-    final def toScala(row: InternalRow, column: Int): ScalaOutputType = {
+    final def toScala(row: data.InternalRow, column: Int): ScalaOutputType = {
       if (row.isNullAt(column)) null.asInstanceOf[ScalaOutputType] else toScalaImpl(row, column)
     }
 
@@ -127,14 +129,14 @@ object CatalystTypeConverters {
      * Given a Catalyst row, convert the value at column `column` to its Scala equivalent.
      * This method will only be called on non-null columns.
      */
-    protected def toScalaImpl(row: InternalRow, column: Int): ScalaOutputType
+    protected def toScalaImpl(row: data.InternalRow, column: Int): ScalaOutputType
   }
 
   private case class IdentityConverter(dataType: DataType)
     extends CatalystTypeConverter[Any, Any, Any] {
     override def toCatalystImpl(scalaValue: Any): Any = scalaValue
     override def toScala(catalystValue: Any): Any = catalystValue
-    override def toScalaImpl(row: InternalRow, column: Int): Any = row.get(column, dataType)
+    override def toScalaImpl(row: data.InternalRow, column: Int): Any = row.get(column, dataType)
   }
 
   private case class UDTConverter[A >: Null](
@@ -146,7 +148,7 @@ object CatalystTypeConverters {
       if (catalystValue == null) null else udt.deserialize(catalystValue)
     }
 
-    override def toScalaImpl(row: InternalRow, column: Int): A =
+    override def toScalaImpl(row: data.InternalRow, column: Int): A =
       toScala(row.get(column, udt.sqlType))
   }
 
@@ -187,7 +189,7 @@ object CatalystTypeConverters {
       }
     }
 
-    override def toScalaImpl(row: InternalRow, column: Int): Seq[Any] =
+    override def toScalaImpl(row: data.InternalRow, column: Int): Seq[Any] =
       toScala(row.getArray(column))
   }
 
@@ -224,16 +226,16 @@ object CatalystTypeConverters {
       }
     }
 
-    override def toScalaImpl(row: InternalRow, column: Int): Map[Any, Any] =
+    override def toScalaImpl(row: data.InternalRow, column: Int): Map[Any, Any] =
       toScala(row.getMap(column))
   }
 
   private case class StructConverter(
-      structType: StructType) extends CatalystTypeConverter[Any, Row, InternalRow] {
+      structType: StructType) extends CatalystTypeConverter[Any, Row, data.InternalRow] {
 
     private[this] val converters = structType.fields.map { f => getConverterForType(f.dataType) }
 
-    override def toCatalystImpl(scalaValue: Any): InternalRow = scalaValue match {
+    override def toCatalystImpl(scalaValue: Any): data.InternalRow = scalaValue match {
       case row: Row =>
         val ar = new Array[Any](row.size)
         var idx = 0
@@ -254,7 +256,7 @@ object CatalystTypeConverters {
         new GenericInternalRow(ar)
     }
 
-    override def toScala(row: InternalRow): Row = {
+    override def toScala(row: data.InternalRow): Row = {
       if (row == null) {
         null
       } else {
@@ -268,7 +270,7 @@ object CatalystTypeConverters {
       }
     }
 
-    override def toScalaImpl(row: InternalRow, column: Int): Row =
+    override def toScalaImpl(row: data.InternalRow, column: Int): Row =
       toScala(row.getStruct(column, structType.size))
   }
 
@@ -279,7 +281,7 @@ object CatalystTypeConverters {
     }
     override def toScala(catalystValue: UTF8String): String =
       if (catalystValue == null) null else catalystValue.toString
-    override def toScalaImpl(row: InternalRow, column: Int): String =
+    override def toScalaImpl(row: data.InternalRow, column: Int): String =
       row.getUTF8String(column).toString
   }
 
@@ -287,7 +289,7 @@ object CatalystTypeConverters {
     override def toCatalystImpl(scalaValue: Date): Int = DateTimeUtils.fromJavaDate(scalaValue)
     override def toScala(catalystValue: Any): Date =
       if (catalystValue == null) null else DateTimeUtils.toJavaDate(catalystValue.asInstanceOf[Int])
-    override def toScalaImpl(row: InternalRow, column: Int): Date =
+    override def toScalaImpl(row: data.InternalRow, column: Int): Date =
       DateTimeUtils.toJavaDate(row.getInt(column))
   }
 
@@ -297,7 +299,7 @@ object CatalystTypeConverters {
     override def toScala(catalystValue: Any): Timestamp =
       if (catalystValue == null) null
       else DateTimeUtils.toJavaTimestamp(catalystValue.asInstanceOf[Long])
-    override def toScalaImpl(row: InternalRow, column: Int): Timestamp =
+    override def toScalaImpl(row: data.InternalRow, column: Int): Timestamp =
       DateTimeUtils.toJavaTimestamp(row.getLong(column))
   }
 
@@ -316,7 +318,7 @@ object CatalystTypeConverters {
       if (catalystValue == null) null
       else catalystValue.toJavaBigDecimal
     }
-    override def toScalaImpl(row: InternalRow, column: Int): JavaBigDecimal =
+    override def toScalaImpl(row: data.InternalRow, column: Int): JavaBigDecimal =
       row.getDecimal(column, dataType.precision, dataType.scale).toJavaBigDecimal
   }
 
@@ -326,31 +328,31 @@ object CatalystTypeConverters {
   }
 
   private object BooleanConverter extends PrimitiveConverter[Boolean] {
-    override def toScalaImpl(row: InternalRow, column: Int): Boolean = row.getBoolean(column)
+    override def toScalaImpl(row: data.InternalRow, column: Int): Boolean = row.getBoolean(column)
   }
 
   private object ByteConverter extends PrimitiveConverter[Byte] {
-    override def toScalaImpl(row: InternalRow, column: Int): Byte = row.getByte(column)
+    override def toScalaImpl(row: data.InternalRow, column: Int): Byte = row.getByte(column)
   }
 
   private object ShortConverter extends PrimitiveConverter[Short] {
-    override def toScalaImpl(row: InternalRow, column: Int): Short = row.getShort(column)
+    override def toScalaImpl(row: data.InternalRow, column: Int): Short = row.getShort(column)
   }
 
   private object IntConverter extends PrimitiveConverter[Int] {
-    override def toScalaImpl(row: InternalRow, column: Int): Int = row.getInt(column)
+    override def toScalaImpl(row: data.InternalRow, column: Int): Int = row.getInt(column)
   }
 
   private object LongConverter extends PrimitiveConverter[Long] {
-    override def toScalaImpl(row: InternalRow, column: Int): Long = row.getLong(column)
+    override def toScalaImpl(row: data.InternalRow, column: Int): Long = row.getLong(column)
   }
 
   private object FloatConverter extends PrimitiveConverter[Float] {
-    override def toScalaImpl(row: InternalRow, column: Int): Float = row.getFloat(column)
+    override def toScalaImpl(row: data.InternalRow, column: Int): Float = row.getFloat(column)
   }
 
   private object DoubleConverter extends PrimitiveConverter[Double] {
-    override def toScalaImpl(row: InternalRow, column: Int): Double = row.getDouble(column)
+    override def toScalaImpl(row: data.InternalRow, column: Int): Double = row.getDouble(column)
   }
 
   /**

@@ -27,9 +27,10 @@ import scala.util.Try
 import org.apache.hadoop.fs.Path
 
 import org.apache.spark.sql.AnalysisException
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data
 import org.apache.spark.sql.catalyst.analysis.{Resolver, TypeCoercion}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Cast, Literal}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
@@ -154,7 +155,7 @@ object PartitioningUtils {
       // Finally, we create `Partition`s based on paths and resolved partition values.
       val partitions = resolvedPartitionValues.zip(pathsWithPartitionValues).map {
         case (PartitionValues(_, literals), (path, _)) =>
-          PartitionPath(InternalRow.fromSeq(literals.map(_.value)), path)
+          PartitionPath(data.InternalRow.fromSeq(literals.map(_.value)), path)
       }
 
       PartitionSpec(StructType(fields), partitions)

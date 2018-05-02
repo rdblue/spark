@@ -23,7 +23,8 @@ import org.apache.spark.annotation.{Experimental, Since}
 import org.apache.spark.internal.Logging
 import org.apache.spark.ml.linalg.{Vector, Vectors, VectorUDT}
 import org.apache.spark.sql.Column
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Expression, ImplicitCastInputTypes, UnsafeArrayData}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, TypedImperativeAggregate}
 import org.apache.spark.sql.functions.lit
@@ -584,7 +585,7 @@ private[ml] object SummaryBuilderImpl extends Logging {
         case NormL2 => vectorUDT.serialize(state.normL2)
         case NormL1 => vectorUDT.serialize(state.normL1)
       }
-      InternalRow.apply(metrics: _*)
+      data.InternalRow.apply(metrics: _*)
     }
 
     override def inputTypes: Seq[DataType] = vectorUDT :: DoubleType :: Nil

@@ -21,8 +21,9 @@ import java.sql.{Date, Timestamp}
 import java.util.{Calendar, Locale, TimeZone}
 
 import org.apache.spark.SparkFunSuite
+
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.util.DateTimeTestUtils._
 import org.apache.spark.sql.catalyst.util.DateTimeUtils

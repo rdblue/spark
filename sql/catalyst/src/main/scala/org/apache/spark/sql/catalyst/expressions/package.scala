@@ -19,6 +19,7 @@ package org.apache.spark.sql.catalyst
 
 import com.google.common.collect.Maps
 
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.types.{StructField, StructType}
 
@@ -57,14 +58,14 @@ package object expressions  {
   /**
    * Used as input into expressions whose output does not depend on any input value.
    */
-  val EmptyRow: InternalRow = null
+  val EmptyRow: data.InternalRow = null
 
   /**
    * Converts a [[InternalRow]] to another Row given a sequence of expression that define each
    * column of the new row. If the schema of the input row is specified, then the given expression
    * will be bound to that schema.
    */
-  abstract class Projection extends (InternalRow => InternalRow) {
+  abstract class Projection extends (data.InternalRow => data.InternalRow) {
 
     /**
      * Initializes internal states given the current partition index.
@@ -78,7 +79,7 @@ package object expressions  {
    * An identity projection. This returns the input row.
    */
   object IdentityProjection extends Projection {
-    override def apply(row: InternalRow): InternalRow = row
+    override def apply(row: data.InternalRow): data.InternalRow = row
   }
 
   /**
@@ -93,10 +94,10 @@ package object expressions  {
    * `InternalRow.copy()` and hold on to the returned [[InternalRow]] before calling `next()`.
    */
   abstract class MutableProjection extends Projection {
-    def currentValue: InternalRow
+    def currentValue: data.InternalRow
 
     /** Uses the given row to store the output of the projection. */
-    def target(row: InternalRow): MutableProjection
+    def target(row: data.InternalRow): MutableProjection
   }
 
 

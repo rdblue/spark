@@ -19,8 +19,9 @@ package org.apache.spark.sql.catalyst.expressions.aggregate
 
 import org.apache.spark.SparkException
 import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.catalyst.InternalRow
+
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult._
+import org.apache.spark.sql.catalyst.data.InternalData
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util.ArrayData
 import org.apache.spark.sql.types._
@@ -86,14 +87,14 @@ class PercentileSuite extends SparkFunSuite {
     val group1 = (0 until rows.length / 2)
     val group1Buffer = agg.createAggregationBuffer()
     group1.foreach { index =>
-      val input = InternalRow(rows(index): _*)
+      val input = InternalData.row(rows(index): _*)
       agg.update(group1Buffer, input)
     }
 
     val group2 = (rows.length / 2 until rows.length)
     val group2Buffer = agg.createAggregationBuffer()
     group2.foreach { index =>
-      val input = InternalRow(rows(index): _*)
+      val input = InternalData.row(rows(index): _*)
       agg.update(group2Buffer, input)
     }
 
@@ -125,7 +126,7 @@ class PercentileSuite extends SparkFunSuite {
     agg.initialize(mutableAggBuffer)
     val dataCount = 10
     (1 to dataCount).foreach { data =>
-      agg.update(mutableAggBuffer, InternalRow(data))
+      agg.update(mutableAggBuffer, InternalData.row(data))
     }
     agg.serializeAggregateBufferInPlace(mutableAggBuffer)
 
@@ -198,7 +199,7 @@ class PercentileSuite extends SparkFunSuite {
 
   test("fails analysis if percentage(s) are invalid") {
     val child = Cast(BoundReference(0, IntegerType, nullable = false), DoubleType)
-    val input = InternalRow(1)
+    val input = InternalData.row(1)
 
     val validPercentages = Seq(Literal(0D), Literal(0.5), Literal(1D),
       CreateArray(Seq(0, 0.5, 1).map(Literal(_))))
@@ -252,7 +253,7 @@ class PercentileSuite extends SparkFunSuite {
     assert(agg.eval(buffer) == null)
 
     // Empty input row
-    agg.update(buffer, InternalRow(null))
+    agg.update(buffer, InternalData.row(null))
     assert(agg.eval(buffer) == null)
 
     // Percentile with Frequency column
@@ -264,19 +265,19 @@ class PercentileSuite extends SparkFunSuite {
     // Empty aggregation buffer
     assert(aggWithFrequency.eval(bufferWithFrequency) == null)
     // Empty input row
-    aggWithFrequency.update(bufferWithFrequency, InternalRow(null, null))
+    aggWithFrequency.update(bufferWithFrequency, InternalData.row(null, null))
     assert(aggWithFrequency.eval(bufferWithFrequency) == null)
 
     // Add some non-empty row with empty frequency column
-    aggWithFrequency.update(bufferWithFrequency, InternalRow(0, null))
+    aggWithFrequency.update(bufferWithFrequency, InternalData.row(0, null))
     assert(aggWithFrequency.eval(bufferWithFrequency) == null)
 
     // Add some non-empty row with zero frequency
-    aggWithFrequency.update(bufferWithFrequency, InternalRow(1, 0))
+    aggWithFrequency.update(bufferWithFrequency, InternalData.row(1, 0))
     assert(aggWithFrequency.eval(bufferWithFrequency) == null)
 
     // Add some non-empty row with positive frequency
-    aggWithFrequency.update(bufferWithFrequency, InternalRow(0, 1))
+    aggWithFrequency.update(bufferWithFrequency, InternalData.row(0, 1))
     assert(aggWithFrequency.eval(bufferWithFrequency) != null)
   }
 
@@ -290,7 +291,7 @@ class PercentileSuite extends SparkFunSuite {
     val caught =
       intercept[SparkException]{
         // Add some non-empty row with negative frequency
-        agg.update(buffer, InternalRow(1, -5))
+        agg.update(buffer, InternalData.row(1, -5))
         agg.eval(buffer)
       }
     assert(caught.getMessage.startsWith("Negative values found in "))

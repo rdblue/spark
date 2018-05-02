@@ -20,7 +20,8 @@ package org.apache.spark.sql.catalyst.expressions.codegen
 import java.nio.charset.StandardCharsets
 
 import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.catalyst.InternalRow
+
+import org.apache.spark.sql.catalyst.data.InternalData
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util.GenericArrayData
 import org.apache.spark.sql.types._
@@ -40,7 +41,7 @@ class GeneratedProjectionSuite extends SparkFunSuite {
     val schema2 = StructType((1 to N).map(i => StructField("", StringType)))
     val joined = new JoinedRow(wideRow1, wideRow2)
     val joinedSchema = StructType(schema1 ++ schema2)
-    val nested = new JoinedRow(InternalRow(joined, joined), joined)
+    val nested = new JoinedRow(InternalData.row(joined, joined), joined)
     val nestedSchema = StructType(
       Seq(StructField("", joinedSchema), StructField("", joinedSchema)) ++ joinedSchema)
 
@@ -91,7 +92,7 @@ class GeneratedProjectionSuite extends SparkFunSuite {
     val schema2 = StructType((1 to N).map(i => StructField("", StringType)))
     val joined = new JoinedRow(wideRow1, wideRow2)
     val joinedSchema = StructType(schema1 ++ schema2)
-    val nested = new JoinedRow(InternalRow(joined, joined), joined)
+    val nested = new JoinedRow(InternalData.row(joined, joined), joined)
     val nestedSchema = StructType(
       Seq(StructField("", joinedSchema), StructField("", joinedSchema)) ++ joinedSchema)
 
@@ -134,7 +135,7 @@ class GeneratedProjectionSuite extends SparkFunSuite {
   }
 
   test("generated unsafe projection with array of binary") {
-    val row = InternalRow(
+    val row = InternalData.row(
       Array[Byte](1, 2),
       new GenericArrayData(Array(Array[Byte](1, 2), null, Array[Byte](3, 4))))
     val fields = (BinaryType :: ArrayType(BinaryType) :: Nil).toArray[DataType]
@@ -159,13 +160,13 @@ class GeneratedProjectionSuite extends SparkFunSuite {
     val fields = Array[DataType](StringType, struct)
     val unsafeProj = UnsafeProjection.create(fields)
 
-    val innerRow = InternalRow(false, 1.toByte, 2.toShort, 3, 4.0f,
+    val innerRow = InternalData.row(false, 1.toByte, 2.toShort, 3, 4.0f,
       "".getBytes(StandardCharsets.UTF_8),
       UTF8String.fromString(""))
-    val row1 = InternalRow(UTF8String.fromString(""), innerRow)
+    val row1 = InternalData.row(UTF8String.fromString(""), innerRow)
     val unsafe1 = unsafeProj(row1).copy()
     // create a Row with long String before the inner struct
-    val row2 = InternalRow(UTF8String.fromString("a_long_string").repeat(10), innerRow)
+    val row2 = InternalData.row(UTF8String.fromString("a_long_string").repeat(10), innerRow)
     val unsafe2 = unsafeProj(row2).copy()
     assert(unsafe1.getStruct(1, 7) === unsafe2.getStruct(1, 7))
     val unsafe3 = unsafeProj(row1).copy()
@@ -181,14 +182,14 @@ class GeneratedProjectionSuite extends SparkFunSuite {
 
     val unsafeProj = GenerateUnsafeProjection.generate(
       Seq(BoundReference(0, new StructType().add("i", StringType), true)))
-    val unsafeRow = unsafeProj.apply(InternalRow(InternalRow(UTF8String.fromString("a"))))
+    val unsafeRow = unsafeProj.apply(InternalData.row(InternalData.row(UTF8String.fromString("a"))))
 
     mutableProj.apply(unsafeRow)
     assert(row.getStruct(0, 1).getString(0) == "a")
 
     // Even if the input row of the mutable projection has been changed, the target mutable row
     // should keep same.
-    unsafeProj.apply(InternalRow(InternalRow(UTF8String.fromString("b"))))
+    unsafeProj.apply(InternalData.row(InternalData.row(UTF8String.fromString("b"))))
     assert(row.getStruct(0, 1).getString(0).toString == "a")
   }
 
@@ -198,14 +199,14 @@ class GeneratedProjectionSuite extends SparkFunSuite {
 
     val unsafeProj = GenerateUnsafeProjection.generate(
       Seq(BoundReference(0, new StructType().add("i", StringType), true)))
-    val unsafeRow = unsafeProj.apply(InternalRow(InternalRow(UTF8String.fromString("a"))))
+    val unsafeRow = unsafeProj.apply(InternalData.row(InternalData.row(UTF8String.fromString("a"))))
 
     val row = safeProj.apply(unsafeRow)
     assert(row.getStruct(0, 1).getString(0) == "a")
 
     // Even if the input row of the mutable projection has been changed, the target mutable row
     // should keep same.
-    unsafeProj.apply(InternalRow(InternalRow(UTF8String.fromString("b"))))
+    unsafeProj.apply(InternalData.row(InternalData.row(UTF8String.fromString("b"))))
     assert(row.getStruct(0, 1).getString(0).toString == "a")
   }
 
@@ -229,7 +230,7 @@ class GeneratedProjectionSuite extends SparkFunSuite {
     val schema2 = StructType((1 to N).map(i => StructField("", StringType)))
     val joined = new JoinedRow(wideRow1, wideRow2)
     val joinedSchema = StructType(schema1 ++ schema2)
-    val nested = new JoinedRow(InternalRow(joined, joined), joined)
+    val nested = new JoinedRow(InternalData.row(joined, joined), joined)
     val nestedSchema = StructType(
       Seq(StructField("", joinedSchema), StructField("", joinedSchema)) ++ joinedSchema)
 

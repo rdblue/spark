@@ -25,7 +25,7 @@ import scala.util.Try
 import com.fasterxml.jackson.core._
 
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util._
 import org.apache.spark.sql.types._
@@ -41,6 +41,7 @@ class JacksonParser(
 
   import JacksonUtils._
   import com.fasterxml.jackson.core.JsonToken._
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
 
   // A `ValueConverter` is responsible for converting a value from `JsonParser`
   // to a value in a field for `InternalRow`.

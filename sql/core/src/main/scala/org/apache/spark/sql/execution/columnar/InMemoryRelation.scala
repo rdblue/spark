@@ -21,8 +21,9 @@ import org.apache.commons.lang3.StringUtils
 
 import org.apache.spark.network.util.JavaUtils
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical
@@ -141,7 +142,7 @@ case class InMemoryRelation(
 
           sizeInBytesStats.add(totalSize)
 
-          val stats = InternalRow.fromSeq(
+          val stats = data.InternalRow.fromSeq(
             columnBuilders.flatMap(_.columnStats.collectedStatistics))
           CachedBatch(rowCount, columnBuilders.map { builder =>
             JavaUtils.bufferToArray(builder.build())

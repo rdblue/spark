@@ -838,7 +838,7 @@ object ScalaReflection extends ScalaReflection {
   def dataTypeJavaClass(dt: DataType): Class[_] = {
     dt match {
       case _: DecimalType => classOf[Decimal]
-      case _: StructType => classOf[InternalRow]
+      case _: StructType => classOf[data.InternalRow]
       case _: ArrayType => classOf[ArrayData]
       case _: MapType => classOf[MapData]
       case ObjectType(cls) => cls
@@ -851,7 +851,7 @@ object ScalaReflection extends ScalaReflection {
     case BinaryType => classOf[Array[Byte]]
     case StringType => classOf[UTF8String]
     case CalendarIntervalType => classOf[CalendarInterval]
-    case _: StructType => classOf[InternalRow]
+    case _: StructType => classOf[data.InternalRow]
     case _: ArrayType => classOf[ArrayType]
     case _: MapType => classOf[MapType]
     case udt: UserDefinedType[_] => javaBoxedType(udt.sqlType)

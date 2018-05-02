@@ -26,10 +26,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.{ObjectInspector, ObjectIns
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory.ObjectInspectorOptions
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory
 import org.apache.hadoop.io.LongWritable
-
 import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.InternalRow
+
+import org.apache.spark.sql.{catalyst, Row}
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, GenericArrayData, MapData}
 import org.apache.spark.sql.types._
@@ -221,7 +221,7 @@ class HiveInspectorSuite extends SparkFunSuite with HiveInspectors {
     val inspector = toInspector(dt)
     checkValues(
       row,
-      unwrap(wrap(InternalRow.fromSeq(row), inspector, dt), inspector).asInstanceOf[InternalRow],
+      unwrap(wrap(catalyst.data.InternalRow.fromSeq(row), inspector, dt), inspector).asInstanceOf[InternalRow],
       dt)
     checkValue(null, unwrap(wrap(null, toInspector(dt), dt), toInspector(dt)))
   }

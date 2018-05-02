@@ -20,8 +20,8 @@ package org.apache.spark.sql.catalyst.expressions
 import java.math.{BigDecimal => JavaBigDecimal}
 
 import org.apache.spark.SparkException
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.{TypeCheckResult, TypeCoercion}
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.util._
 import org.apache.spark.sql.types._
@@ -530,6 +530,8 @@ case class Cast(child: Expression, dataType: DataType, timeZoneId: Option[String
   }
 
   private[this] def castArray(fromType: DataType, toType: DataType): Any => Any = {
+    import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
+
     val elementCast = cast(fromType, toType)
     // TODO: Could be faster?
     buildCast[ArrayData](_, array => {

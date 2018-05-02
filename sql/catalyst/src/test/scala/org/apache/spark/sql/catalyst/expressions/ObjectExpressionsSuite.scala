@@ -26,15 +26,14 @@ import scala.util.Random
 import org.apache.spark.{SparkConf, SparkFunSuite}
 import org.apache.spark.serializer.{JavaSerializer, KryoSerializer}
 import org.apache.spark.sql.{RandomDataGenerator, Row}
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.{ResolveTimeZone, SimpleAnalyzer, UnresolvedDeserializer}
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.codegen.GenerateUnsafeProjection
 import org.apache.spark.sql.catalyst.expressions.objects._
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, Project}
-import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, ArrayData, GenericArrayData}
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, ArrayData, DateTimeUtils, GenericArrayData}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
@@ -64,6 +63,7 @@ class Outer extends Serializable {
 }
 
 class ObjectExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
 
   test("SPARK-16622: The returned value of the called method in Invoke can be null") {
     val inputRow = InternalRow.fromSeq(Seq((false, null)))
@@ -204,10 +204,10 @@ class ObjectExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
       null, InternalRow.fromSeq(Seq(Integer.valueOf(1))))
 
     checkObjectExprEvaluation(
-      Invoke(funcObj, "binOp", DoubleType, inputSum), 1.25, InternalRow.apply(1, 0.25))
+      Invoke(funcObj, "binOp", DoubleType, inputSum), 1.25, InternalData.row(1, 0.25))
 
     checkObjectExprEvaluation(
-      Invoke(funcSubObj, "binOp", DoubleType, inputSum), 0.75, InternalRow.apply(1, 0.25))
+      Invoke(funcSubObj, "binOp", DoubleType, inputSum), 0.75, InternalData.row(1, 0.25))
   }
 
   test("SPARK-23593: InitializeJavaBean should support interpreted execution") {
@@ -337,7 +337,7 @@ class ObjectExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
 
       collectionCls match {
         case null =>
-          assert(result.asInstanceOf[ArrayData].array.toSeq == expected)
+          assert(result.asInstanceOf[ArrayData].toArray(elementType).toSeq == expected)
         case l if classOf[java.util.List[_]].isAssignableFrom(l) =>
           assert(result.asInstanceOf[java.util.List[_]].asScala.toSeq == expected)
         case s if classOf[Seq[_]].isAssignableFrom(s) =>

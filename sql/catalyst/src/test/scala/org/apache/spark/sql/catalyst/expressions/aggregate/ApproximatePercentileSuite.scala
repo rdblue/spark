@@ -18,16 +18,16 @@
 package org.apache.spark.sql.catalyst.expressions.aggregate
 
 import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.catalyst.InternalRow
+
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult.TypeCheckFailure
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
+import org.apache.spark.sql.catalyst.data.InternalData
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.dsl.plans._
 import org.apache.spark.sql.catalyst.expressions.{Alias, AttributeReference, BoundReference, Cast, CreateArray, DecimalLiteral, GenericInternalRow, Literal}
 import org.apache.spark.sql.catalyst.expressions.aggregate.ApproximatePercentile.{PercentileDigest, PercentileDigestSerializer}
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation
-import org.apache.spark.sql.catalyst.util.ArrayData
-import org.apache.spark.sql.catalyst.util.QuantileSummaries
+import org.apache.spark.sql.catalyst.util.{ArrayData, QuantileSummaries}
 import org.apache.spark.sql.catalyst.util.QuantileSummaries.Stats
 import org.apache.spark.sql.types.{ArrayType, DoubleType, IntegerType}
 import org.apache.spark.util.SizeEstimator
@@ -109,14 +109,14 @@ class ApproximatePercentileSuite extends SparkFunSuite {
     val group1 = (0 until data.length / 2)
     val group1Buffer = agg.createAggregationBuffer()
     group1.foreach { index =>
-      val input = InternalRow(data(index))
+      val input = InternalData.row(data(index))
       agg.update(group1Buffer, input)
     }
 
     val group2 = (data.length / 2 until data.length)
     val group2Buffer = agg.createAggregationBuffer()
     group2.foreach { index =>
-      val input = InternalRow(data(index))
+      val input = InternalData.row(data(index))
       agg.update(group2Buffer, input)
     }
 
@@ -149,7 +149,7 @@ class ApproximatePercentileSuite extends SparkFunSuite {
     agg.initialize(mutableAggBuffer)
     val dataCount = 10
     (1 to dataCount).foreach { data =>
-      agg.update(mutableAggBuffer, InternalRow(data))
+      agg.update(mutableAggBuffer, InternalData.row(data))
     }
     agg.serializeAggregateBufferInPlace(mutableAggBuffer)
 
@@ -315,11 +315,11 @@ class ApproximatePercentileSuite extends SparkFunSuite {
     // Empty aggregation buffer
     assert(agg.eval(buffer) == null)
     // Empty input row
-    agg.update(buffer, InternalRow(null))
+    agg.update(buffer, InternalData.row(null))
     assert(agg.eval(buffer) == null)
 
     // Add some non-empty row
-    agg.update(buffer, InternalRow(0))
+    agg.update(buffer, InternalData.row(0))
     assert(agg.eval(buffer) != null)
   }
 

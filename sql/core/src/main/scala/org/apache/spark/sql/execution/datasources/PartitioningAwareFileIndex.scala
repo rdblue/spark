@@ -24,7 +24,8 @@ import org.apache.hadoop.fs._
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.catalyst.{expressions, InternalRow}
+import org.apache.spark.sql.catalyst.expressions
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util.{CaseInsensitiveMap, DateTimeUtils}
 import org.apache.spark.sql.types.{StringType, StructType}
@@ -138,7 +139,7 @@ abstract class PartitioningAwareFileIndex(
 
         // we need to cast into the data type that user specified.
         def castPartitionValuesToUserSchema(row: InternalRow) = {
-          InternalRow((0 until row.numFields).map { i =>
+          InternalData.row((0 until row.numFields).map { i =>
             val dt = inferredPartitionSpec.partitionColumns.fields(i).dataType
             Cast(
               Literal.create(row.get(i, dt), dt),

@@ -37,7 +37,7 @@ import org.apache.spark.unsafe.types.UTF8String;
  * Note that this class intentionally has a lot of duplicated code with {@link ColumnarRow}, to
  * avoid java polymorphism overhead by keeping {@link ColumnarRow} and this class final classes.
  */
-public final class MutableColumnarRow extends InternalRow {
+public final class MutableColumnarRow implements InternalRow {
   public int rowId;
   private final ColumnVector[] columns;
   private final WritableColumnVector[] writableColumns;

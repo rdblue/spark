@@ -26,13 +26,15 @@ import net.razorvine.pickle.{IObjectPickler, Opcodes, Pickler}
 
 import org.apache.spark.api.python.SerDeUtil
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, ArrayData, GenericArrayData, MapData}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
 object EvaluatePython {
+
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
 
   def needConversionInPython(dt: DataType): Boolean = dt match {
     case DateType | TimestampType => true

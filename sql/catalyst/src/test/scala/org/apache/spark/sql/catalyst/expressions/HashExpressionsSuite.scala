@@ -27,7 +27,7 @@ import org.scalatest.exceptions.TestFailedException
 
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.{RandomDataGenerator, Row}
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.encoders.{ExamplePointUDT, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.codegen.GenerateMutableProjection
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, DateTimeUtils, GenericArrayData}
@@ -642,7 +642,7 @@ class HashExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper {
     val schema = StructType((1 to N).map(i => StructField(i.toString, StringType)))
     checkResult(schema, wideRow)
 
-    val nestedRow = InternalRow(wideRow)
+    val nestedRow = InternalRow.of(wideRow)
     val nestedSchema = new StructType().add("nested", schema)
     checkResult(nestedSchema, nestedRow)
   }

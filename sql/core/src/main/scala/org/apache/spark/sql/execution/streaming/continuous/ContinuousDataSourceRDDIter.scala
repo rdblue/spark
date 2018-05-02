@@ -21,10 +21,11 @@ import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, TimeUnit}
 import java.util.concurrent.atomic.AtomicBoolean
 
 import org.apache.spark._
+
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.datasources.v2.{DataSourceRDDPartition, RowToUnsafeDataReader}
 import org.apache.spark.sql.sources.v2.reader._

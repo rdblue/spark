@@ -17,7 +17,8 @@
 package org.apache.spark.sql.catalyst.expressions.aggregate
 
 import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.catalyst.InternalRow
+
+import org.apache.spark.sql.catalyst.data.InternalData
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Literal}
 import org.apache.spark.sql.types.IntegerType
 
@@ -27,41 +28,41 @@ class LastTestSuite extends SparkFunSuite {
   val evaluatorIgnoreNulls = DeclarativeAggregateEvaluator(Last(input, Literal(true)), Seq(input))
 
   test("empty buffer") {
-    assert(evaluator.initialize() === InternalRow(null, false))
+    assert(evaluator.initialize() === InternalData.row(null, false))
   }
 
   test("update") {
     val result = evaluator.update(
-      InternalRow(1),
-      InternalRow(9),
-      InternalRow(-1))
-    assert(result === InternalRow(-1, true))
+      InternalData.row(1),
+      InternalData.row(9),
+      InternalData.row(-1))
+    assert(result === InternalData.row(-1, true))
   }
 
   test("update - ignore nulls") {
     val result1 = evaluatorIgnoreNulls.update(
-      InternalRow(null),
-      InternalRow(9),
-      InternalRow(null))
-    assert(result1 === InternalRow(9, true))
+      InternalData.row(null),
+      InternalData.row(9),
+      InternalData.row(null))
+    assert(result1 === InternalData.row(9, true))
 
     val result2 = evaluatorIgnoreNulls.update(
-      InternalRow(null),
-      InternalRow(null))
-    assert(result2 === InternalRow(null, false))
+      InternalData.row(null),
+      InternalData.row(null))
+    assert(result2 === InternalData.row(null, false))
   }
 
   test("merge") {
     // Empty merge
     val p0 = evaluator.initialize()
-    assert(evaluator.merge(p0) === InternalRow(null, false))
+    assert(evaluator.merge(p0) === InternalData.row(null, false))
 
     // Single merge
-    val p1 = evaluator.update(InternalRow(1), InternalRow(-99))
+    val p1 = evaluator.update(InternalData.row(1), InternalData.row(-99))
     assert(evaluator.merge(p1) === p1)
 
     // Multiple merges.
-    val p2 = evaluator.update(InternalRow(2), InternalRow(10))
+    val p2 = evaluator.update(InternalData.row(2), InternalData.row(10))
     assert(evaluator.merge(p1, p2) === p2)
 
     // Empty partitions (p0 is empty)
@@ -71,39 +72,39 @@ class LastTestSuite extends SparkFunSuite {
 
   test("merge - ignore nulls") {
     // Multi merges
-    val p1 = evaluatorIgnoreNulls.update(InternalRow(1), InternalRow(null))
-    val p2 = evaluatorIgnoreNulls.update(InternalRow(null), InternalRow(null))
+    val p1 = evaluatorIgnoreNulls.update(InternalData.row(1), InternalData.row(null))
+    val p2 = evaluatorIgnoreNulls.update(InternalData.row(null), InternalData.row(null))
     assert(evaluatorIgnoreNulls.merge(p1, p2) === p1)
   }
 
   test("eval") {
     // Null Eval
-    assert(evaluator.eval(InternalRow(null, true)) === InternalRow(null))
-    assert(evaluator.eval(InternalRow(null, false)) === InternalRow(null))
+    assert(evaluator.eval(InternalData.row(null, true)) === InternalData.row(null))
+    assert(evaluator.eval(InternalData.row(null, false)) === InternalData.row(null))
 
     // Empty Eval
     val p0 = evaluator.initialize()
-    assert(evaluator.eval(p0) === InternalRow(null))
+    assert(evaluator.eval(p0) === InternalData.row(null))
 
     // Update - Eval
-    val p1 = evaluator.update(InternalRow(1), InternalRow(-99))
-    assert(evaluator.eval(p1) === InternalRow(-99))
+    val p1 = evaluator.update(InternalData.row(1), InternalData.row(-99))
+    assert(evaluator.eval(p1) === InternalData.row(-99))
 
     // Update - Merge - Eval
-    val p2 = evaluator.update(InternalRow(2), InternalRow(10))
+    val p2 = evaluator.update(InternalData.row(2), InternalData.row(10))
     val m1 = evaluator.merge(p1, p0, p2)
-    assert(evaluator.eval(m1) === InternalRow(10))
+    assert(evaluator.eval(m1) === InternalData.row(10))
 
     // Update - Merge - Eval (empty partition at the end)
     val m2 = evaluator.merge(p2, p1, p0)
-    assert(evaluator.eval(m2) === InternalRow(-99))
+    assert(evaluator.eval(m2) === InternalData.row(-99))
   }
 
   test("eval - ignore nulls") {
     // Update - Merge - Eval
-    val p1 = evaluatorIgnoreNulls.update(InternalRow(1), InternalRow(null))
-    val p2 = evaluatorIgnoreNulls.update(InternalRow(null), InternalRow(null))
+    val p1 = evaluatorIgnoreNulls.update(InternalData.row(1), InternalData.row(null))
+    val p2 = evaluatorIgnoreNulls.update(InternalData.row(null), InternalData.row(null))
     val m1 = evaluatorIgnoreNulls.merge(p1, p2)
-    assert(evaluatorIgnoreNulls.eval(m1) === InternalRow(1))
+    assert(evaluatorIgnoreNulls.eval(m1) === InternalData.row(1))
   }
 }

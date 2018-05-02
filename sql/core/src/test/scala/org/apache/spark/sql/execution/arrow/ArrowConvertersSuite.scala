@@ -28,10 +28,10 @@ import org.apache.arrow.vector.{VectorLoader, VectorSchemaRoot}
 import org.apache.arrow.vector.ipc.JsonFileReader
 import org.apache.arrow.vector.util.Validator
 import org.scalatest.BeforeAndAfterAll
-
 import org.apache.spark.{SparkException, TaskContext}
+
 import org.apache.spark.sql.{DataFrame, Row}
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.test.SharedSQLContext

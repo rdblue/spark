@@ -24,8 +24,8 @@ import java.util.regex.Pattern
 
 import scala.collection.mutable.ArrayBuffer
 
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.util.{ArrayData, GenericArrayData, TypeUtils}
 import org.apache.spark.sql.types._
@@ -53,6 +53,8 @@ import org.apache.spark.unsafe.types.{ByteArray, UTF8String}
 // scalastyle:on line.size.limit
 case class ConcatWs(children: Seq[Expression])
   extends Expression with ImplicitCastInputTypes {
+
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
 
   require(children.nonEmpty, s"$prettyName requires at least one argument.")
 

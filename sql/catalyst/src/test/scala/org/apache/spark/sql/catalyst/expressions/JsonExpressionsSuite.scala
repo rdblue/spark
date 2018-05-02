@@ -20,7 +20,7 @@ package org.apache.spark.sql.catalyst.expressions
 import java.util.Calendar
 
 import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.errors.TreeNodeException
 import org.apache.spark.sql.catalyst.plans.PlanTestBase
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, DateTimeTestUtils, DateTimeUtils, GenericArrayData, PermissiveMode}
@@ -321,49 +321,49 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
   test("json_tuple - hive key 4 - null json") {
     checkJsonTuple(
       JsonTuple(Literal(null) :: jsonTupleQuery),
-      InternalRow(null, null, null, null, null))
+      InternalData.row(null, null, null, null, null))
   }
 
   test("json_tuple - hive key 5 - null and empty fields") {
     checkJsonTuple(
       JsonTuple(Literal("""{"f1": "", "f5": null}""") :: jsonTupleQuery),
-      InternalRow(UTF8String.fromString(""), null, null, null, null))
+      InternalData.row(UTF8String.fromString(""), null, null, null, null))
   }
 
   test("json_tuple - hive key 6 - invalid json (array)") {
     checkJsonTuple(
       JsonTuple(Literal("[invalid JSON string]") :: jsonTupleQuery),
-      InternalRow(null, null, null, null, null))
+      InternalData.row(null, null, null, null, null))
   }
 
   test("json_tuple - invalid json (object start only)") {
     checkJsonTuple(
       JsonTuple(Literal("{") :: jsonTupleQuery),
-      InternalRow(null, null, null, null, null))
+      InternalData.row(null, null, null, null, null))
   }
 
   test("json_tuple - invalid json (no object end)") {
     checkJsonTuple(
       JsonTuple(Literal("""{"foo": "bar"""") :: jsonTupleQuery),
-      InternalRow(null, null, null, null, null))
+      InternalData.row(null, null, null, null, null))
   }
 
   test("json_tuple - invalid json (invalid json)") {
     checkJsonTuple(
       JsonTuple(Literal("\\") :: jsonTupleQuery),
-      InternalRow(null, null, null, null, null))
+      InternalData.row(null, null, null, null, null))
   }
 
   test("SPARK-16548: json_tuple - invalid json with leading nulls") {
     checkJsonTuple(
       JsonTuple(Literal(badJson) :: jsonTupleQuery),
-      InternalRow(null, null, null, null, null))
+      InternalData.row(null, null, null, null, null))
   }
 
   test("json_tuple - preserve newlines") {
     checkJsonTuple(
       JsonTuple(Literal("{\"a\":\"b\nc\"}") :: Literal("a") :: Nil),
-      InternalRow(UTF8String.fromString("b\nc")))
+      InternalData.row(UTF8String.fromString("b\nc")))
   }
 
   test("SPARK-21677: json_tuple throws NullPointException when column is null as string type") {
@@ -373,7 +373,7 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
         NonFoldableLiteral("cast(NULL AS STRING)") ::
         NonFoldableLiteral("f2") ::
         Nil),
-      InternalRow(UTF8String.fromString("1"), null, UTF8String.fromString("2")))
+      InternalData.row(UTF8String.fromString("1"), null, UTF8String.fromString("2")))
   }
 
   test("SPARK-21804: json_tuple returns null values within repeated columns except the first one") {
@@ -383,7 +383,7 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
         NonFoldableLiteral("cast(NULL AS STRING)") ::
         NonFoldableLiteral("f1") ::
         Nil),
-      InternalRow(UTF8String.fromString("1"), null, UTF8String.fromString("1")))
+      InternalData.row(UTF8String.fromString("1"), null, UTF8String.fromString("1")))
   }
 
   val gmtId = Option(DateTimeUtils.TimeZoneGMT.getID)
@@ -393,7 +393,7 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
     val schema = StructType(StructField("a", IntegerType) :: Nil)
     checkEvaluation(
       JsonToStructs(schema, Map.empty, Literal(jsonData), gmtId),
-      InternalRow(1)
+      InternalData.row(1)
     )
   }
 
@@ -415,14 +415,14 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
   test("from_json - input=array, schema=array, output=array") {
     val input = """[{"a": 1}, {"a": 2}]"""
     val schema = ArrayType(StructType(StructField("a", IntegerType) :: Nil))
-    val output = InternalRow(1) :: InternalRow(2) :: Nil
+    val output = InternalData.row(1) :: InternalData.row(2) :: Nil
     checkEvaluation(JsonToStructs(schema, Map.empty, Literal(input), gmtId), output)
   }
 
   test("from_json - input=object, schema=array, output=array of single row") {
     val input = """{"a": 1}"""
     val schema = ArrayType(StructType(StructField("a", IntegerType) :: Nil))
-    val output = InternalRow(1) :: Nil
+    val output = InternalData.row(1) :: Nil
     checkEvaluation(JsonToStructs(schema, Map.empty, Literal(input), gmtId), output)
   }
 
@@ -436,14 +436,14 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
   test("from_json - input=empty object, schema=array, output=array of single row with null") {
     val input = "{ }"
     val schema = ArrayType(StructType(StructField("a", IntegerType) :: Nil))
-    val output = InternalRow(null) :: Nil
+    val output = InternalData.row(null) :: Nil
     checkEvaluation(JsonToStructs(schema, Map.empty, Literal(input), gmtId), output)
   }
 
   test("from_json - input=array of single object, schema=struct, output=single row") {
     val input = """[{"a": 1}]"""
     val schema = StructType(StructField("a", IntegerType) :: Nil)
-    val output = InternalRow(1)
+    val output = InternalData.row(1)
     checkEvaluation(JsonToStructs(schema, Map.empty, Literal(input), gmtId), output)
   }
 
@@ -464,7 +464,7 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
   test("from_json - input=empty object, schema=struct, output=single row with null") {
     val input = """{  }"""
     val schema = StructType(StructField("a", IntegerType) :: Nil)
-    val output = InternalRow(null)
+    val output = InternalData.row(null)
     checkEvaluation(JsonToStructs(schema, Map.empty, Literal(input), gmtId), output)
   }
 
@@ -492,14 +492,14 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
     c.set(Calendar.MILLISECOND, 123)
     checkEvaluation(
       JsonToStructs(schema, Map.empty, Literal(jsonData1), gmtId),
-      InternalRow(c.getTimeInMillis * 1000L)
+      InternalData.row(c.getTimeInMillis * 1000L)
     )
     // The result doesn't change because the json string includes timezone string ("Z" here),
     // which means the string represents the timestamp string in the timezone regardless of
     // the timeZoneId parameter.
     checkEvaluation(
       JsonToStructs(schema, Map.empty, Literal(jsonData1), Option("PST")),
-      InternalRow(c.getTimeInMillis * 1000L)
+      InternalData.row(c.getTimeInMillis * 1000L)
     )
 
     val jsonData2 = """{"t": "2016-01-01T00:00:00"}"""
@@ -513,7 +513,7 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
           Map("timestampFormat" -> "yyyy-MM-dd'T'HH:mm:ss"),
           Literal(jsonData2),
           Option(tz.getID)),
-        InternalRow(c.getTimeInMillis * 1000L)
+        InternalData.row(c.getTimeInMillis * 1000L)
       )
       checkEvaluation(
         JsonToStructs(
@@ -522,7 +522,7 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
             DateTimeUtils.TIMEZONE_OPTION -> tz.getID),
           Literal(jsonData2),
           gmtId),
-        InternalRow(c.getTimeInMillis * 1000L)
+        InternalData.row(c.getTimeInMillis * 1000L)
       )
     }
   }
@@ -546,7 +546,7 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
 
   test("to_json - array") {
     val inputSchema = ArrayType(StructType(StructField("a", IntegerType) :: Nil))
-    val input = new GenericArrayData(InternalRow(1) :: InternalRow(2) :: Nil)
+    val input = new GenericArrayData(InternalData.row(1) :: InternalData.row(2) :: Nil)
     val output = """[{"a":1},{"a":2}]"""
     checkEvaluation(
       StructsToJson(Map.empty, Literal.create(input, inputSchema), gmtId),
@@ -555,7 +555,7 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
 
   test("to_json - array with single empty row") {
     val inputSchema = ArrayType(StructType(StructField("a", IntegerType) :: Nil))
-    val input = new GenericArrayData(InternalRow(null) :: Nil)
+    val input = new GenericArrayData(InternalData.row(null) :: Nil)
     val output = """[{}]"""
     checkEvaluation(
       StructsToJson(Map.empty, Literal.create(input, inputSchema), gmtId),
@@ -616,7 +616,7 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
 
   test("SPARK-21513: to_json support map[string, struct] to json") {
     val schema = MapType(StringType, StructType(StructField("a", IntegerType) :: Nil))
-    val input = Literal.create(ArrayBasedMapData(Map("test" -> InternalRow(1))), schema)
+    val input = Literal.create(ArrayBasedMapData(Map("test" -> InternalData.row(1))), schema)
     checkEvaluation(
       StructsToJson(Map.empty, input),
       """{"test":{"a":1}}"""
@@ -626,7 +626,8 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
   test("SPARK-21513: to_json support map[struct, struct] to json") {
     val schema = MapType(StructType(StructField("a", IntegerType) :: Nil),
       StructType(StructField("b", IntegerType) :: Nil))
-    val input = Literal.create(ArrayBasedMapData(Map(InternalRow(1) -> InternalRow(2))), schema)
+    val input = Literal.create(ArrayBasedMapData(
+      Map(InternalData.row(1) -> InternalData.row(2))), schema)
     checkEvaluation(
       StructsToJson(Map.empty, input),
       """{"[1]":{"b":2}}"""
@@ -696,7 +697,7 @@ class JsonExpressionsSuite extends SparkFunSuite with ExpressionEvalHelper with 
           .add("a", LongType, nullable = false)
           .add("b", StringType, nullable = false)
           .add("c", StringType, nullable = false)
-        val output = InternalRow(1L, null, UTF8String.fromString("foo"))
+        val output = InternalData.row(1L, null, UTF8String.fromString("foo"))
         checkEvaluation(
           JsonToStructs(jsonSchema, Map.empty, Literal.create(input, StringType), gmtId),
           output

@@ -21,7 +21,8 @@ import scala.util.Random
 
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.RandomDataGenerator
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.catalyst.expressions.{JoinedRow, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.types._
@@ -51,7 +52,7 @@ class GenerateUnsafeRowJoinerSuite extends SparkFunSuite {
     val schema = StructType(Seq(
       StructField("f1", StringType), StructField("f2", StringType)))
     val row: UnsafeRow = UnsafeProjection.create(schema).apply(
-      InternalRow(UTF8String.EMPTY_UTF8, UTF8String.EMPTY_UTF8))
+      InternalData.row(UTF8String.EMPTY_UTF8, UTF8String.EMPTY_UTF8))
      testConcat(schema, row, schema, row)
   }
 
@@ -61,7 +62,7 @@ class GenerateUnsafeRowJoinerSuite extends SparkFunSuite {
     val emptyIntArray =
       ExpressionEncoder[Array[Int]]().resolveAndBind().toRow(Array.emptyIntArray).getArray(0)
     val row: UnsafeRow = UnsafeProjection.create(schema).apply(
-      InternalRow(emptyIntArray, emptyIntArray))
+      InternalData.row(emptyIntArray, emptyIntArray))
     testConcat(schema, row, schema, row)
   }
 
@@ -69,7 +70,7 @@ class GenerateUnsafeRowJoinerSuite extends SparkFunSuite {
     val schema = StructType(Seq(
       StructField("f1", StringType), StructField("f2", StringType)))
     val row: UnsafeRow = UnsafeProjection.create(schema).apply(
-      InternalRow(UTF8String.EMPTY_UTF8, UTF8String.fromString("foo")))
+      InternalData.row(UTF8String.EMPTY_UTF8, UTF8String.fromString("foo")))
     testConcat(schema, row, schema, row)
   }
 

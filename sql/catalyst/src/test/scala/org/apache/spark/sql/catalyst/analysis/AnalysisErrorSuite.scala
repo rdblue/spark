@@ -54,6 +54,7 @@ private[sql] class GroupableUDT extends UserDefinedType[GroupableData] {
 private[sql] case class UngroupableData(@BeanProperty data: Map[Int, Int])
 
 private[sql] class UngroupableUDT extends UserDefinedType[UngroupableData] {
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
 
   override def sqlType: DataType = MapType(IntegerType, IntegerType)
 
@@ -66,8 +67,8 @@ private[sql] class UngroupableUDT extends UserDefinedType[UngroupableData] {
   override def deserialize(datum: Any): UngroupableData = {
     datum match {
       case data: MapData =>
-        val keyArray = data.keyArray().array
-        val valueArray = data.valueArray().array
+        val keyArray = data.keyArray().toArray[Int](IntegerType)
+        val valueArray = data.valueArray().toArray[Int](IntegerType)
         assert(keyArray.length == valueArray.length)
         val mapData = keyArray.zip(valueArray).toMap.asInstanceOf[Map[Int, Int]]
         UngroupableData(mapData)

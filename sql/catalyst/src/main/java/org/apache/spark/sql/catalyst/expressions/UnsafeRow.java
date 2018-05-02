@@ -31,7 +31,7 @@ import com.esotericsoftware.kryo.KryoSerializable;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import org.apache.spark.sql.catalyst.InternalRow;
+import org.apache.spark.sql.catalyst.data.InternalRow;
 import org.apache.spark.sql.types.*;
 import org.apache.spark.unsafe.Platform;
 import org.apache.spark.unsafe.array.ByteArrayMethods;
@@ -60,7 +60,7 @@ import static org.apache.spark.unsafe.Platform.BYTE_ARRAY_OFFSET;
  *
  * Instances of `UnsafeRow` act as pointers to row data stored in this format.
  */
-public final class UnsafeRow extends InternalRow implements Externalizable, KryoSerializable {
+public final class UnsafeRow implements InternalRow, Externalizable, KryoSerializable {
 
   //////////////////////////////////////////////////////////////////////////////
   // Static methods
@@ -299,50 +299,6 @@ public final class UnsafeRow extends InternalRow implements Externalizable, Kryo
           bytes, Platform.BYTE_ARRAY_OFFSET, baseObject, baseOffset + cursor, bytes.length);
         setLong(ordinal, (cursor << 32) | ((long) bytes.length));
       }
-    }
-  }
-
-  @Override
-  public Object get(int ordinal, DataType dataType) {
-    if (isNullAt(ordinal) || dataType instanceof NullType) {
-      return null;
-    } else if (dataType instanceof BooleanType) {
-      return getBoolean(ordinal);
-    } else if (dataType instanceof ByteType) {
-      return getByte(ordinal);
-    } else if (dataType instanceof ShortType) {
-      return getShort(ordinal);
-    } else if (dataType instanceof IntegerType) {
-      return getInt(ordinal);
-    } else if (dataType instanceof LongType) {
-      return getLong(ordinal);
-    } else if (dataType instanceof FloatType) {
-      return getFloat(ordinal);
-    } else if (dataType instanceof DoubleType) {
-      return getDouble(ordinal);
-    } else if (dataType instanceof DecimalType) {
-      DecimalType dt = (DecimalType) dataType;
-      return getDecimal(ordinal, dt.precision(), dt.scale());
-    } else if (dataType instanceof DateType) {
-      return getInt(ordinal);
-    } else if (dataType instanceof TimestampType) {
-      return getLong(ordinal);
-    } else if (dataType instanceof BinaryType) {
-      return getBinary(ordinal);
-    } else if (dataType instanceof StringType) {
-      return getUTF8String(ordinal);
-    } else if (dataType instanceof CalendarIntervalType) {
-      return getInterval(ordinal);
-    } else if (dataType instanceof StructType) {
-      return getStruct(ordinal, ((StructType) dataType).size());
-    } else if (dataType instanceof ArrayType) {
-      return getArray(ordinal);
-    } else if (dataType instanceof MapType) {
-      return getMap(ordinal);
-    } else if (dataType instanceof UserDefinedType) {
-      return get(ordinal, ((UserDefinedType)dataType).sqlType());
-    } else {
-      throw new UnsupportedOperationException("Unsupported data type " + dataType.simpleString());
     }
   }
 

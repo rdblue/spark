@@ -20,7 +20,7 @@ package org.apache.spark.sql.execution.command
 import scala.collection.mutable
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.{CatalogColumnStat, CatalogStatistics, CatalogTableType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate._
@@ -38,6 +38,8 @@ import org.apache.spark.sql.types._
 case class AnalyzeColumnCommand(
     tableIdent: TableIdentifier,
     columnNames: Seq[String]) extends RunnableCommand {
+
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val sessionState = sparkSession.sessionState

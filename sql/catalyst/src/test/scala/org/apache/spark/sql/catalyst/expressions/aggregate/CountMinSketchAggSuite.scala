@@ -18,12 +18,12 @@
 package org.apache.spark.sql.catalyst.expressions.aggregate
 
 import java.{lang => jl}
-
 import scala.util.Random
 
 import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.catalyst.InternalRow
+
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult.TypeCheckFailure
+import org.apache.spark.sql.catalyst.data.InternalData
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
@@ -93,7 +93,7 @@ class CountMinSketchAggSuite extends SparkFunSuite {
 
     def addToAggregateBuffer[T](agg: CountMinSketchAgg, items: Seq[T]): CountMinSketch = {
       val buf = agg.createAggregationBuffer()
-      items.foreach { item => agg.update(buf, InternalRow(item)) }
+      items.foreach { item => agg.update(buf, InternalData.row(item)) }
       buf
     }
   }
@@ -192,11 +192,11 @@ class CountMinSketchAggSuite extends SparkFunSuite {
     assert(isEqual(agg.eval(buffer), emptyCms))
 
     // Empty input row
-    agg.update(buffer, InternalRow(null))
+    agg.update(buffer, InternalData.row(null))
     assert(isEqual(agg.eval(buffer), emptyCms))
 
     // Add some non-empty row
-    agg.update(buffer, InternalRow(0))
+    agg.update(buffer, InternalData.row(0))
     assert(!isEqual(agg.eval(buffer), emptyCms))
   }
 }

@@ -20,8 +20,9 @@ package org.apache.spark.sql.catalyst.expressions
 import scala.collection.mutable
 
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.types._
@@ -188,7 +189,7 @@ case class Stack(children: Seq[Expression]) extends Generator {
         val index = row * numFields + col
         fields.update(col, if (index < values.length) values(index) else null)
       }
-      InternalRow(fields: _*)
+      InternalData.row(fields: _*)
     }
   }
 
@@ -244,6 +245,8 @@ case class GeneratorOuter(child: Generator) extends UnaryExpression with Generat
 abstract class ExplodeBase extends UnaryExpression with CollectionGenerator with Serializable {
   override val inline: Boolean = false
 
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
+
   override def checkInputDataTypes(): TypeCheckResult = child.dataType match {
     case _: ArrayType | _: MapType =>
       TypeCheckResult.TypeCheckSuccess
@@ -286,7 +289,7 @@ abstract class ExplodeBase extends UnaryExpression with CollectionGenerator with
         } else {
           val rows = new Array[InternalRow](inputArray.numElements())
           inputArray.foreach(et, (i, e) => {
-            rows(i) = if (position) InternalRow(i, e) else InternalRow(e)
+            rows(i) = if (position) InternalData.row(i, e) else InternalData.row(e)
           })
           rows
         }
@@ -298,7 +301,7 @@ abstract class ExplodeBase extends UnaryExpression with CollectionGenerator with
           val rows = new Array[InternalRow](inputMap.numElements())
           var i = 0
           inputMap.foreach(kt, vt, (k, v) => {
-            rows(i) = if (position) InternalRow(i, k, v) else InternalRow(k, v)
+            rows(i) = if (position) InternalData.row(i, k, v) else InternalData.row(k, v)
             i += 1
           })
           rows

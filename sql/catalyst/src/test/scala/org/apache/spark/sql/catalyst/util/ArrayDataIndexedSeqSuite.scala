@@ -26,6 +26,8 @@ import org.apache.spark.sql.catalyst.expressions.{FromUnsafeProjection, UnsafeAr
 import org.apache.spark.sql.types._
 
 class ArrayDataIndexedSeqSuite extends SparkFunSuite {
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
+
   private def compArray(arrayData: ArrayData, elementDt: DataType, array: Array[Any]): Unit = {
     assert(arrayData.numElements == array.length)
     array.zipWithIndex.map { case (e, i) =>

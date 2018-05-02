@@ -28,11 +28,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.{StructField => HiveStructF
 import org.apache.hadoop.hive.serde2.objectinspector.primitive._
 import org.apache.hadoop.hive.serde2.typeinfo.{DecimalTypeInfo, TypeInfoFactory}
 
-import org.apache.spark.sql.AnalysisException
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.{catalyst, types, AnalysisException}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util._
-import org.apache.spark.sql.types
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -55,8 +54,8 @@ import org.apache.spark.unsafe.types.UTF8String
  *  Complex Types =>
  *    Map: `MapData`
  *    List: `ArrayData`
- *    Struct: [[org.apache.spark.sql.catalyst.InternalRow]]
- *    Union: NOT SUPPORTED YET
+ *    Struct: [[InternalRow]]
+ * Union: NOT SUPPORTED YET
  *  The Complex types plays as a container, which can hold arbitrary data types.
  *
  * In Hive, the native data types are various, in UDF/UDAF/UDTF, and associated with
@@ -109,19 +108,19 @@ import org.apache.spark.unsafe.types.UTF8String
  * Fortunately, only few built-in Hive Object Inspectors are used in generic udf/udaf/udtf
  * evaluation.
  * 1) Primitive Types (PrimitiveObjectInspector & its sub classes)
-  {{{
-   public interface PrimitiveObjectInspector {
-     // Java Primitives (java.lang.Integer, java.lang.String etc.)
-     Object getPrimitiveJavaObject(Object o);
-     // Writables (hadoop.io.IntWritable, hadoop.io.Text etc.)
-     Object getPrimitiveWritableObject(Object o);
-     // ObjectInspector only inspect the `writable` always return true, we need to check it
-     // before invoking the methods above.
-     boolean preferWritable();
-     ...
-   }
-  }}}
-
+  *{{{
+   *public interface PrimitiveObjectInspector {
+     *// Java Primitives (java.lang.Integer, java.lang.String etc.)
+     *Object getPrimitiveJavaObject(Object o);
+     *// Writables (hadoop.io.IntWritable, hadoop.io.Text etc.)
+     *Object getPrimitiveWritableObject(Object o);
+     *// ObjectInspector only inspect the `writable` always return true, we need to check it
+     *// before invoking the methods above.
+     *boolean preferWritable();
+     *...
+   *}
+  *}}}
+ *
  * 2) Complex Types:
  *   ListObjectInspector: inspects java array or [[java.util.List]]
  *   MapObjectInspector: inspects [[java.util.Map]]
@@ -134,11 +133,11 @@ import org.apache.spark.unsafe.types.UTF8String
  * constant value as its property, usually the value is created when the constant object inspector
  * constructed.
  * {{{
-   public interface ConstantObjectInspector extends ObjectInspector {
-      Object getWritableConstantValue();
-      ...
-    }
-  }}}
+   *public interface ConstantObjectInspector extends ObjectInspector {
+      *Object getWritableConstantValue();
+      *...
+    *}
+  *}}}
  * Hive provides 3 built-in constant object inspectors:
  * Primitive Object Inspectors:
  *     WritableConstantStringObjectInspector
@@ -689,7 +688,7 @@ private[hive] trait HiveInspectors {
         }
         data: Any => {
           if (data != null) {
-            InternalRow.fromSeq(unwrappers.map(_(data)))
+            catalyst.data.InternalRow.fromSeq(unwrappers.map(_(data)))
           } else {
             null
           }

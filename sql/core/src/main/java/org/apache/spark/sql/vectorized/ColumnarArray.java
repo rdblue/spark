@@ -26,7 +26,7 @@ import org.apache.spark.unsafe.types.UTF8String;
  * Array abstraction in {@link ColumnVector}.
  */
 @InterfaceStability.Evolving
-public final class ColumnarArray extends ArrayData {
+public final class ColumnarArray implements ArrayData {
   // The data for this array. This array contains elements from
   // data[offset] to data[offset + length).
   private final ColumnVector data;
@@ -69,23 +69,6 @@ public final class ColumnarArray extends ArrayData {
 
   @Override
   public double[] toDoubleArray() { return data.getDoubles(offset, length); }
-
-  // TODO: this is extremely expensive.
-  @Override
-  public Object[] array() {
-    DataType dt = data.dataType();
-    Object[] list = new Object[length];
-    try {
-      for (int i = 0; i < length; i++) {
-        if (!data.isNullAt(offset + i)) {
-          list[i] = get(i, dt);
-        }
-      }
-      return list;
-    } catch(Exception e) {
-      throw new RuntimeException("Could not get the array", e);
-    }
-  }
 
   @Override
   public boolean isNullAt(int ordinal) { return data.isNullAt(offset + ordinal); }

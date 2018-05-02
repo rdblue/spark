@@ -18,8 +18,8 @@
 package org.apache.spark.sql.execution.datasources.parquet
 
 import java.nio.{ByteBuffer, ByteOrder}
-import java.util
 
+import java.util
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 import org.apache.hadoop.conf.Configuration
@@ -30,7 +30,7 @@ import org.apache.parquet.hadoop.api.WriteSupport.WriteContext
 import org.apache.parquet.io.api.{Binary, RecordConsumer}
 
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SpecializedGetters
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.execution.datasources.parquet.ParquetSchemaConverter.minBytesForPrecision

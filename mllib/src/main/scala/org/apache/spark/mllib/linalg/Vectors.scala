@@ -18,8 +18,8 @@
 package org.apache.spark.mllib.linalg
 
 import java.lang.{Double => JavaDouble, Integer => JavaInteger, Iterable => JavaIterable}
-import java.util
 
+import java.util
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
 import scala.language.implicitConversions
@@ -27,13 +27,13 @@ import scala.language.implicitConversions
 import breeze.linalg.{DenseVector => BDV, SparseVector => BSV, Vector => BV}
 import org.json4s.DefaultFormats
 import org.json4s.JsonDSL._
-import org.json4s.jackson.JsonMethods.{compact, parse => parseJson, render}
-
+import org.json4s.jackson.JsonMethods.{compact, render, parse => parseJson}
 import org.apache.spark.SparkException
+
 import org.apache.spark.annotation.{AlphaComponent, Since}
 import org.apache.spark.ml.{linalg => newlinalg}
 import org.apache.spark.mllib.util.NumericParser
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, UnsafeArrayData}
 import org.apache.spark.sql.types._
 

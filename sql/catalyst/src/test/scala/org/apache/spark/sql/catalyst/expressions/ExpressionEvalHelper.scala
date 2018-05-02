@@ -27,8 +27,9 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.apache.spark.{SparkConf, SparkFunSuite}
 import org.apache.spark.serializer.JavaSerializer
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.analysis.{ResolveTimeZone, SimpleAnalyzer}
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.optimizer.SimpleTestOptimizer
 import org.apache.spark.sql.catalyst.plans.logical.{OneRowRelation, Project}
@@ -210,12 +211,12 @@ trait ExpressionEvalHelper extends GeneratorDrivenPropertyChecks {
 
     if (expected == null) {
       if (!unsafeRow.isNullAt(0)) {
-        val expectedRow = InternalRow(expected, expected)
+        val expectedRow = InternalData.row(expected, expected)
         fail("Incorrect evaluation in unsafe mode: " +
           s"$expression, actual: $unsafeRow, expected: $expectedRow$input")
       }
     } else {
-      val lit = InternalRow(expected, expected)
+      val lit = InternalData.row(expected, expected)
       val expectedRow =
         factory.create(Array(expression.dataType, expression.dataType)).apply(lit)
       if (unsafeRow != expectedRow) {

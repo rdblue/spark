@@ -113,6 +113,8 @@ object ReferenceValueClass {
 }
 
 class ExpressionEncoderSuite extends PlanTest with AnalysisTest {
+  import org.apache.spark.sql.catalyst.data.InternalData.Implicits._
+
   OuterScopes.addOuterScope(this)
 
   implicit def encoder[T : TypeTag]: ExpressionEncoder[T] = verifyNotLeakingReflectionObjects {

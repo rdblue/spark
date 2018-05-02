@@ -24,13 +24,13 @@ import java.util.zip.GZIPOutputStream
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{BlockLocation, FileStatus, Path, RawLocalFileSystem}
 import org.apache.hadoop.mapreduce.Job
-
 import org.apache.spark.{SparkConf, SparkException}
+
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.catalog.BucketSpec
 import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionSet, PredicateHelper}
-import org.apache.spark.sql.catalyst.util
+import org.apache.spark.sql.catalyst.{data, util}
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.execution.{DataSourceScanExec, SparkPlan}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.internal.SQLConf
@@ -280,10 +280,10 @@ class FileSourceStrategySuite extends QueryTest with SharedSQLContext with Predi
 
   test("Locality support for FileScanRDD") {
     val partition = FilePartition(0, Seq(
-      PartitionedFile(InternalRow.empty, "fakePath0", 0, 10, Array("host0", "host1")),
-      PartitionedFile(InternalRow.empty, "fakePath0", 10, 20, Array("host1", "host2")),
-      PartitionedFile(InternalRow.empty, "fakePath1", 0, 5, Array("host3")),
-      PartitionedFile(InternalRow.empty, "fakePath2", 0, 5, Array("host4"))
+      PartitionedFile(data.InternalRow.empty, "fakePath0", 0, 10, Array("host0", "host1")),
+      PartitionedFile(data.InternalRow.empty, "fakePath0", 10, 20, Array("host1", "host2")),
+      PartitionedFile(data.InternalRow.empty, "fakePath1", 0, 5, Array("host3")),
+      PartitionedFile(data.InternalRow.empty, "fakePath2", 0, 5, Array("host4"))
     ))
 
     val fakeRDD = new FileScanRDD(

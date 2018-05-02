@@ -21,9 +21,9 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, Da
 import java.util
 
 import org.apache.spark.SparkException
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult.{TypeCheckFailure, TypeCheckSuccess}
+import org.apache.spark.sql.catalyst.data.{InternalData, InternalRow}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util._
 import org.apache.spark.sql.types._
@@ -250,7 +250,7 @@ case class Percentile(
       val projection = UnsafeProjection.create(Array[DataType](child.dataType, LongType))
       // Write pairs in counts map to byte buffer.
       obj.foreach { case (key, count) =>
-        val row = InternalRow.apply(key, count)
+        val row = InternalData.row(key, count)
         val unsafeRow = projection.apply(row)
         out.writeInt(unsafeRow.getSizeInBytes)
         unsafeRow.writeToStream(out, buffer)

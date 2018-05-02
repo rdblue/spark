@@ -20,7 +20,9 @@ package org.apache.spark.sql.catalyst
 import java.sql.{Date, Timestamp}
 
 import org.apache.spark.SparkFunSuite
+
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{BoundReference, Expression, Literal, SpecificInternalRow, UpCast}
 import org.apache.spark.sql.catalyst.expressions.objects.{AssertNotNull, NewInstance}
 import org.apache.spark.sql.types._
@@ -102,7 +104,7 @@ object TestingUDT {
     override def userClass: Class[NestedStruct] = classOf[NestedStruct]
 
     override def deserialize(datum: Any): NestedStruct = datum match {
-      case row: InternalRow =>
+      case row: data.InternalRow =>
         new NestedStruct(row.getInt(0), row.getLong(1), row.getDouble(2))
     }
   }

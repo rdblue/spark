@@ -20,10 +20,10 @@ package org.apache.spark.sql.sources.v2
 import java.util.{ArrayList, List => JList}
 
 import test.org.apache.spark.sql.sources.v2._
-
 import org.apache.spark.SparkException
+
 import org.apache.spark.sql.{AnalysisException, DataFrame, QueryTest, Row}
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.data.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.datasources.v2.{DataSourceV2Relation, DataSourceV2ScanExec}
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
