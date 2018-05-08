@@ -103,10 +103,10 @@ case class DataSourceV2ScanExec(
         partitions).asInstanceOf[RDD[InternalRow]]
 
     case r: SupportsScanColumnarBatch if r.enableBatchRead() =>
-      new DataSourceRDD(sparkContext, batchPartitions).asInstanceOf[RDD[InternalRow]]
+      new DataSourceRDD(sparkContext, output, batchPartitions).asInstanceOf[RDD[InternalRow]]
 
     case _ =>
-      new DataSourceRDD(sparkContext, partitions).asInstanceOf[RDD[InternalRow]]
+      new DataSourceRDD(sparkContext, output, partitions).asInstanceOf[RDD[InternalRow]]
   }
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = Seq(inputRDD)

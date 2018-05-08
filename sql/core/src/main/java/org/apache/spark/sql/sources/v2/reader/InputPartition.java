@@ -20,6 +20,7 @@ package org.apache.spark.sql.sources.v2.reader;
 import java.io.Serializable;
 
 import org.apache.spark.annotation.InterfaceStability;
+import org.apache.spark.sql.catalyst.expressions.Expression;
 
 /**
  * An input partition returned by {@link DataSourceReader#planInputPartitions()} and is
@@ -49,6 +50,18 @@ public interface InputPartition<T> extends Serializable {
    */
   default String[] preferredLocations() {
     return new String[0];
+  }
+
+  /**
+   * Residual filters that should be used to filter records from this partition.
+   *
+   * By default, this method returns a 0-length array of expressions, which means that there are no
+   * filters to run on records in this partition.
+   *
+   * @return an array of filter expressions
+   */
+  default Expression[] residualFilters() {
+    return new Expression[0];
   }
 
   /**
