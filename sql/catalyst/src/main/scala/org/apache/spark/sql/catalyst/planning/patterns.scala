@@ -207,7 +207,7 @@ object PhysicalAggregation {
     (Seq[NamedExpression], Seq[Expression], Seq[NamedExpression], LogicalPlan)
 
   def unapply(a: Any): Option[ReturnType] = a match {
-    case logical.Aggregate(groupingExpressions, resultExpressions, child) =>
+    case Aggregate(groupingExpressions, resultExpressions, child) =>
       // A single aggregate expression might appear multiple times in resultExpressions.
       // In order to avoid evaluating an individual aggregate function multiple times, we'll
       // build a set of semantically distinct aggregate expressions and re-write expressions so
@@ -287,7 +287,7 @@ object PhysicalWindow {
     (WindowFunctionType, Seq[NamedExpression], Seq[Expression], Seq[SortOrder], LogicalPlan)
 
   def unapply(a: Any): Option[ReturnType] = a match {
-    case expr @ logical.Window(windowExpressions, partitionSpec, orderSpec, child) =>
+    case expr @ Window(windowExpressions, partitionSpec, orderSpec, child) =>
 
       // The window expression should not be empty here, otherwise it's a bug.
       if (windowExpressions.isEmpty) {

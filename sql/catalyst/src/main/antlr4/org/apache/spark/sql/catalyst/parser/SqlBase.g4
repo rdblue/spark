@@ -90,7 +90,7 @@ statement
     | SHOW DATABASES (LIKE? pattern=STRING)?                           #showDatabases
     | createTableHeader ('(' colTypeList ')')? tableProvider
         ((OPTIONS options=tablePropertyList) |
-        (PARTITIONED BY partitionColumnNames=identifierList) |
+        (PARTITIONED BY partitioning=transformList) |
         bucketSpec |
         locationSpec |
         (COMMENT comment=STRING) |
@@ -576,6 +576,21 @@ namedExpression
 
 namedExpressionSeq
     : namedExpression (',' namedExpression)*
+    ;
+
+transformList
+    : '(' transforms+=transform (',' transforms+=transform)* ')'
+    ;
+
+transform
+    : qualifiedName                                                           #identityTransform
+    | transformName=identifier
+      '(' argument+=transformArgument (',' argument+=transformArgument)* ')'  #applyTransform
+    ;
+
+transformArgument
+    : qualifiedName
+    | constant
     ;
 
 expression
