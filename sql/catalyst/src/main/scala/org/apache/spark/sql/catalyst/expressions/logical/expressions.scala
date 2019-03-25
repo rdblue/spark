@@ -19,7 +19,7 @@ package org.apache.spark.sql.catalyst.expressions.logical
 
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.catalog.BucketSpec
-import org.apache.spark.sql.types.{DataType, IntegerType}
+import org.apache.spark.sql.types.{DataType, IntegerType, StringType}
 
 /**
  * Helper methods for working with the logical expressions API.
@@ -60,12 +60,12 @@ private[sql] object LogicalExpressions {
   def apply(name: String, arguments: Array[Expression]): Transform = ApplyTransform(name, arguments)
 
   def apply(name: String, arguments: Expression*): Transform =
-    ApplyTransform(name, arguments.toArray)
+    ApplyTransform(name, arguments)
 
   def bucket(numBuckets: Int, columns: Array[String]): BucketTransform = bucket(numBuckets, columns)
 
   def bucket(numBuckets: Int, columns: String*): BucketTransform =
-    BucketTransform(literal(numBuckets, IntegerType), columns.map(FieldReference).toArray)
+    BucketTransform(literal(numBuckets, IntegerType), columns.map(FieldReference))
 
   def identity(column: String): IdentityTransform = IdentityTransform(reference(column))
 
@@ -91,11 +91,12 @@ private[sql] abstract class SingleColumnTransform(ref: NamedReference) extends T
 
   override lazy val describe: String = name + "(" + reference.describe + ")"
 
+  override def toString: String = describe
 }
 
 private[sql] final case class BucketTransform(
     numBuckets: Literal[Int],
-    columns: Array[NamedReference]) extends Transform {
+    columns: Seq[NamedReference]) extends Transform {
 
   override lazy val name: String = "bucket"
 
@@ -105,14 +106,18 @@ private[sql] final case class BucketTransform(
         .map(_.asInstanceOf[NamedReference])
   }
 
-  override lazy val arguments: Array[Expression] = numBuckets +: columns
+  override lazy val arguments: Array[Expression] = numBuckets +: columns.toArray
 
   override lazy val describe: String = s"bucket(${arguments.map(_.describe).mkString(", ")})"
+
+  override def toString: String = describe
 }
 
 private[sql] final case class ApplyTransform(
     name: String,
-    arguments: Array[Expression]) extends Transform {
+    args: Seq[Expression]) extends Transform {
+
+  override lazy val arguments: Array[Expression] = args.toArray
 
   override lazy val references: Array[NamedReference] = {
     arguments
@@ -121,6 +126,8 @@ private[sql] final case class ApplyTransform(
   }
 
   override lazy val describe: String = s"$name(${arguments.map(_.describe).mkString(", ")})"
+
+  override def toString: String = describe
 }
 
 private[sql] final case class IdentityTransform(
@@ -150,9 +157,17 @@ private[sql] final case class DateHourTransform(
 }
 
 private[sql] final case class LiteralValue[T](value: T, dataType: DataType) extends Literal[T] {
-  override def describe: String = String.valueOf(value)
+  override def describe: String = {
+    if (dataType.isInstanceOf[StringType]) {
+      s"'$value'"
+    } else {
+      s"$value"
+    }
+  }
+  override def toString: String = describe
 }
 
 private[sql] final case class FieldReference(fieldName: String) extends NamedReference {
   override def describe: String = fieldName
+  override def toString: String = describe
 }

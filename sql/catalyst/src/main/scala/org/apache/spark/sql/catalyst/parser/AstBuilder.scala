@@ -2060,7 +2060,7 @@ class AstBuilder(conf: SQLConf) extends SqlBaseBaseVisitor[AnyRef] with Logging 
 
             val fields = arguments.tail.map(arg => getFieldReference(applyCtx, arg))
 
-            BucketTransform(LiteralValue(numBuckets, IntegerType), fields.toArray)
+            BucketTransform(LiteralValue(numBuckets, IntegerType), fields)
 
           case "year" =>
             YearTransform(getSingleFieldReference(applyCtx, arguments))
@@ -2075,7 +2075,7 @@ class AstBuilder(conf: SQLConf) extends SqlBaseBaseVisitor[AnyRef] with Logging 
             DateHourTransform(getSingleFieldReference(applyCtx, arguments))
 
           case name =>
-            ApplyTransform(name, arguments.toArray)
+            ApplyTransform(name, arguments)
         }
     }
   }
