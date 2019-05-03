@@ -46,6 +46,12 @@ class NoSuchTableException(message: String) extends AnalysisException(message) {
   }
 }
 
+class NoSuchViewException(message: String) extends NoSuchTableException(message) {
+  def this(tableIdent: Identifier) = {
+    this(s"View ${tableIdent.quoted} not found")
+  }
+}
+
 class NoSuchPartitionException(
     db: String,
     table: String,

@@ -45,6 +45,12 @@ class TableAlreadyExistsException(message: String) extends AnalysisException(mes
   }
 }
 
+class ViewAlreadyExistsException(message: String) extends TableAlreadyExistsException(message) {
+  def this(tableIdent: Identifier) = {
+    this(s"View ${tableIdent.quoted} already exists")
+  }
+}
+
 class TempTableAlreadyExistsException(table: String)
   extends TableAlreadyExistsException(s"Temporary view '$table' already exists")
 
