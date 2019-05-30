@@ -22,6 +22,7 @@ import java.util.Locale
 import scala.collection.mutable
 
 import org.apache.spark.sql.AnalysisException
+import org.apache.spark.sql.catalog.v2.{CatalogPlugin, LookupCatalog}
 import org.apache.spark.sql.catalyst.expressions.IntegerLiteral
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -50,10 +51,14 @@ object ResolveHints {
    *
    * This rule must happen before common table expressions.
    */
-  class ResolveJoinStrategyHints(conf: SQLConf) extends Rule[LogicalPlan] {
+  class ResolveJoinStrategyHints(
+      conf: SQLConf,
+      catalogLookup: String => CatalogPlugin) extends Rule[LogicalPlan] with LookupCatalog {
     private val STRATEGY_HINT_NAMES = JoinStrategyHint.strategies.flatMap(_.hintAliases)
 
     def resolver: Resolver = conf.resolver
+
+    override protected def lookupCatalog(name: String): CatalogPlugin = catalogLookup(name)
 
     private def createHintInfo(hintName: String): HintInfo = {
       HintInfo(strategy =
@@ -71,18 +76,20 @@ object ResolveHints {
 
       val newNode = CurrentOrigin.withOrigin(plan.origin) {
         plan match {
-          case ResolvedHint(u: UnresolvedRelation, hint)
-              if relations.exists(resolver(_, u.tableIdentifier.table)) =>
-            relations.remove(u.tableIdentifier.table)
+          case ResolvedHint(u @ UnresolvedRelation(ident), hint)
+              if relations.exists(resolver(_, ident.last)) =>
+            relations.remove(ident.last)
             ResolvedHint(u, createHintInfo(hintName).merge(hint, handleOverriddenHintInfo))
+
           case ResolvedHint(r: SubqueryAlias, hint)
               if relations.exists(resolver(_, r.alias)) =>
             relations.remove(r.alias)
             ResolvedHint(r, createHintInfo(hintName).merge(hint, handleOverriddenHintInfo))
 
-          case u: UnresolvedRelation if relations.exists(resolver(_, u.tableIdentifier.table)) =>
-            relations.remove(u.tableIdentifier.table)
+          case u @ UnresolvedRelation(ident) if relations.exists(resolver(_, ident.last)) =>
+            relations.remove(ident.last)
             ResolvedHint(plan, createHintInfo(hintName))
+
           case r: SubqueryAlias if relations.exists(resolver(_, r.alias)) =>
             relations.remove(r.alias)
             ResolvedHint(plan, createHintInfo(hintName))

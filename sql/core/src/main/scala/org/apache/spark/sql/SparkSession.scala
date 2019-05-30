@@ -624,11 +624,15 @@ class SparkSession private(
    * @since 2.0.0
    */
   def table(tableName: String): DataFrame = {
-    table(sessionState.sqlParser.parseTableIdentifier(tableName))
+    table(sessionState.sqlParser.parseMultipartIdentifier(tableName))
   }
 
   private[sql] def table(tableIdent: TableIdentifier): DataFrame = {
     Dataset.ofRows(self, UnresolvedRelation(tableIdent))
+  }
+
+  private[sql] def table(multipartIdentifier: Seq[String]): DataFrame = {
+    Dataset.ofRows(self, UnresolvedRelation(multipartIdentifier))
   }
 
   /* ----------------- *

@@ -20,6 +20,7 @@ package org.apache.spark.sql.execution.command
 import scala.collection.mutable
 
 import org.apache.spark.sql.{AnalysisException, Row, SparkSession}
+import org.apache.spark.sql.catalog.v2.{CatalogPlugin, LookupCatalog}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedFunction, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.{CatalogStorageFormat, CatalogTable, CatalogTableType}
@@ -181,6 +182,11 @@ case class CreateViewCommand(
    * Permanent views are not allowed to reference temp objects, including temp function and views
    */
   private def verifyTemporaryObjectsNotExists(sparkSession: SparkSession): Unit = {
+    val lookup = new LookupCatalog {
+      override protected def lookupCatalog(name: String): CatalogPlugin = sparkSession.catalog(name)
+    }
+    import lookup._
+
     if (!isTemporary) {
       // This func traverses the unresolved plan `child`. Below are the reasons:
       // 1) Analyzer replaces unresolved temporary views by a SubqueryAlias with the corresponding
@@ -190,10 +196,11 @@ case class CreateViewCommand(
       // package (e.g., HiveGenericUDF).
       child.collect {
         // Disallow creating permanent views based on temporary views.
-        case s: UnresolvedRelation
-          if sparkSession.sessionState.catalog.isTemporaryTable(s.tableIdentifier) =>
+        case UnresolvedRelation(AsTableIdentifier(ident))
+            if sparkSession.sessionState.catalog.isTemporaryTable(ident) =>
+          // temporary views are only stored in the session catalog
           throw new AnalysisException(s"Not allowed to create a permanent view $name by " +
-            s"referencing a temporary view ${s.tableIdentifier}")
+              s"referencing a temporary view $ident")
         case other if !other.resolved => other.expressions.flatMap(_.collect {
           // Disallow creating permanent views based on temporary UDFs.
           case e: UnresolvedFunction
